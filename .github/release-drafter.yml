@@ -23,7 +23,7 @@ version-resolver:
       - 'minor'
   patch:
     labels:
-      - 'patch'
+      - 'test'
   default: patch
 template: |
   ## Changes
