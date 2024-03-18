@@ -1,0 +1,13 @@
+name: Pull Request Labels
+
+on: workflow_call
+
+jobs:
+  label:
+    runs-on: databox-amd64-bare-s
+    steps:
+      - uses: mheap/github-action-required-labels@v5
+        with:
+          mode: exactly
+          count: 1
+          labels: "major,minor,patch"
