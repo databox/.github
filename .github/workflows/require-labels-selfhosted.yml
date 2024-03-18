@@ -4,7 +4,7 @@ on: workflow_call
 
 jobs:
   label:
-    runs-on: databox-amd64-bare-s
+    runs-on: databox-amd64-bare-xs
     steps:
       - uses: mheap/github-action-required-labels@v5
         with:
