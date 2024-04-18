@@ -83,7 +83,7 @@ jobs:
           debug: true
           github-token: "${{ secrets.GITHUB_TOKEN }}"
           script: |
-            const argsString = "${{ inputs.build_args }}";
+            const argsString = `${{ inputs.build_args }}`;
             if (!argsString) {
               return '';
             }
