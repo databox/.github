@@ -34,6 +34,7 @@ on:
 jobs:
   tag:
     uses: databox/.github/.github/workflows/tag-check.yml@master
+    secrets: inherit
   
   build:
     name: Build and push ${{ matrix.platform }}
@@ -99,6 +100,7 @@ jobs:
   
   manifest:
     uses: databox/.github/.github/workflows/manifest.yml@master
+    secrets: inherit
     needs: 
       - build
     with:
