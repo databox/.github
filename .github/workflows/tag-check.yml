@@ -1,6 +1,9 @@
 name: Build and push image
 on:
   workflow_call:
+    outputs:
+      match:
+        value: ${{ jobs.tag-filter.outputs.match }}
 jobs:
   tag-filter:
     name: Tag check
