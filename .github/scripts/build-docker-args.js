@@ -7,7 +7,7 @@
 // ARG2:VALUE2
 
 // The output is a string that can be used as an argument for the docker build command
-const buildDockerBuildArgsFromString = (argsString) => {
+export const buildDockerBuildArgsFromString = (argsString) => {
   if (!argsString) {
     return '';
   }
@@ -16,5 +16,3 @@ const buildDockerBuildArgsFromString = (argsString) => {
   const result = args.map(arg => `--build-arg ${arg.replace(':', '=')}`).join(' ');
   return result;
 }
-
-module.exports = buildDockerBuildArgsFromString;

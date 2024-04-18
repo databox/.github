@@ -41,6 +41,7 @@ jobs:
     runs-on: ubnutu-22-04-${{ matrix.platform }}-1-core-4-ram
     needs:
       - tag
+    if: needs.tag.outputs.match == 'true'
     strategy:
       fail-fast: true
       matrix:
@@ -82,7 +83,7 @@ jobs:
           debug: true
           github-token: "${{ secrets.GITHUB_TOKEN }}"
           script: |
-            const builder = require('.github/scripts/build-docker-args.js');
+            const builder = import '.github/scripts/build-docker-args.js';
             return builder("${{ inputs.build_args }}");
     
       - name: Download artifacts
@@ -106,5 +107,7 @@ jobs:
     secrets: inherit
     needs: 
       - build
+      - tag
+    if: needs.tag.outputs.match == 'true'
     with:
       tag: ${{ inputs.tag }}
