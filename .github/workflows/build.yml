@@ -83,8 +83,11 @@ jobs:
           debug: true
           github-token: "${{ secrets.GITHUB_TOKEN }}"
           script: |
-            const builder = require('.github/scripts/build-docker-args.js');
-            return builder("");
+            const argsString = "";
+            const args = argsString.split('\n');
+            const result = args.map(arg => `--build-arg ${arg.replace(':', '=')}`).join(' ');
+            return result;
+            
           result-encoding: string
     
       - name: Download artifacts
