@@ -8,7 +8,7 @@ on:
         type: string
       dockerfile:
         description: 'Path to the Dockerfile'
-        required: true
+        required: false
         type: string
         default: './Dockerfile'
       build_args:
