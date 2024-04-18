@@ -41,7 +41,6 @@ jobs:
     runs-on: ubnutu-22-04-${{ matrix.platform }}-1-core-4-ram
     needs:
       - tag
-    if: needs.tag.outputs.match == 'true'
     strategy:
       fail-fast: true
       matrix:
@@ -52,6 +51,10 @@ jobs:
       ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
     steps:
       - uses: actions/checkout@v4
+
+      - name: Show tag output
+        run: |
+          echo "Tag output: ${{ needs.tag.outputs }}"
 
       - name: Prepare ECR Repository name variables
         run: |
