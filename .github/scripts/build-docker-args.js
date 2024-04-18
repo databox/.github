@@ -17,4 +17,4 @@ const buildDockerBuildArgsFromString = (argsString) => {
   return result;
 }
 
-export default buildDockerBuildArgsFromString;
+module.exports = buildDockerBuildArgsFromString;
