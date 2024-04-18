@@ -1,0 +1,38 @@
+name: Build and push manifest
+on:
+  workflow_call:
+    inputs:
+      tag:
+        description: 'Tag name'
+        required: true
+        type: string
+jobs:
+  manifest:
+    name: Build and push manifest
+    runs-on: ubnutu-22-04-arm64-1-core-4-ram
+    timeout-minutes: 1
+    env:
+      ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
+    steps:
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Prepare ECR Repository name
+        run: |
+          echo "ECR_REPOSITORY=$(echo ${{ github.repository }} | sed 's|[^/]*/||')" >> $GITHUB_ENV
+
+      - name: Build and push manifest
+        run: |
+          SERVICE_IMAGE_NAME="${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}"
+          docker manifest create $SERVICE_IMAGE_NAME:${{ github.event.release.tag_name }} \
+            --amend $SERVICE_IMAGE_NAME:${{ github.event.release.tag_name }}-amd64 \
+            --amend $SERVICE_IMAGE_NAME:${{ github.event.release.tag_name }}-arm64
+          docker manifest push $SERVICE_IMAGE_NAME:${{ github.event.release.tag_name }}    
