@@ -83,8 +83,8 @@ jobs:
           debug: true
           github-token: "${{ secrets.GITHUB_TOKEN }}"
           script: |
-            import {buildDockerBuildArgsFromString} from '.github/scripts/build-docker-args.js';
-            return buildDockerBuildArgsFromString("${{ inputs.build_args }}");
+            const builder = require('.github/scripts/build-docker-args.js');
+            return builder("${{ inputs.build_args }}");
     
       - name: Download artifacts
         if: ${{ inputs.artifacts_download }}

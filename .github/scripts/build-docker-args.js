@@ -7,7 +7,7 @@
 // ARG2:VALUE2
 
 // The output is a string that can be used as an argument for the docker build command
-export function buildDockerBuildArgsFromString (argsString) {
+module.exports =  (argsString) => {
   if (!argsString) {
     return '';
   }
