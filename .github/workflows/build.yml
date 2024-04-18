@@ -110,7 +110,7 @@ jobs:
           SERVICE_IMAGE_NAME="${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}"
           echo  ${{ steps.docker-build-args.outputs.result }}
           docker buildx create --name DLC_builder --use
-          docker buildx build ${{ steps.docker-build-args.outputs.result }}-f ${{ inputs.dockerfile }} -t ${SERVICE_IMAGE_NAME}:${TAG} --progress plain --push --provenance false .
+          docker buildx build ${{ steps.docker-build-args.outputs.result }} -f ${{ inputs.dockerfile }} -t ${SERVICE_IMAGE_NAME}:${TAG} --progress plain --push --provenance false .
   
   manifest:
     uses: databox/.github/.github/workflows/manifest.yml@master
