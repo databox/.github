@@ -35,9 +35,11 @@ jobs:
   tag:
     uses: databox/.github/.github/workflows/tag-check.yml@master
     secrets: inherit
+    with:
+      tag: ${{ inputs.tag }}
   
   build:
-    name: Build and push ${{ matrix.platform }}
+    name: ${{ matrix.platform }}
     runs-on: ubnutu-22-04-${{ matrix.platform }}-1-core-4-ram
     needs:
       - tag
@@ -93,7 +95,7 @@ jobs:
             const args = argsString.split('\n').filter(arg => arg.trim() !== '');
             const result = args.map(arg => `--build-arg ${arg.replace(':', '=')}`).join(' ');
             return result;
-                
+
       - name: Download artifacts
         if: ${{ inputs.artifacts_download }}
         uses: actions/download-artifact@v4
