@@ -83,11 +83,14 @@ jobs:
           debug: true
           github-token: "${{ secrets.GITHUB_TOKEN }}"
           script: |
-            const argsString = "";
+            const argsString = "${{ inputs.build_args }}";
+            if (!argsString) {
+              return '';
+            }
             const args = argsString.split('\n');
             const result = args.map(arg => `--build-arg ${arg.replace(':', '=')}`).join(' ');
             return result;
-            
+
           result-encoding: string
     
       - name: Download artifacts
