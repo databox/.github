@@ -1,0 +1,20 @@
+name: Build and push image
+on:
+  workflow_call:
+jobs:
+  tag-filter:
+    name: Tag check
+    runs-on: ubnutu-22-04-arm64-1-core-4-ram
+    timeout-minutes: 1
+    outputs:
+      match: ${{ steps.tag-check.outputs.match }}
+    steps:
+      - id: tag-check
+        run: |
+          if [[ "${{ github.event.release.tag_name }}" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)(-([0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*))?(\\+([0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*))?$ ]]; then
+            echo "match=true" >> $GITHUB_OUTPUT
+            echo "valid tag for release"
+          else
+            echo "match=false" >> $GITHUB_OUTPUT
+            echo "${{ github.event.release.tag_name }} is invalid tag for release. Tag check regex: ^([0-9]+)\.([0-9]+)\.([0-9]+)(-([0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*))?(\\+([0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*))?$"
+          fi
