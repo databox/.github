@@ -83,7 +83,7 @@ jobs:
           debug: true
           github-token: "${{ secrets.PAT_APPROVE_PR }}"
           script: |
-            const builder = require('./github/scripts/build-docker-args.js');
+            const builder = require('./.github/scripts/build-docker-args.js');
             return builder(`${{ inputs.build_args }}`);
 
           result-encoding: string
