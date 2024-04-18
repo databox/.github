@@ -54,7 +54,7 @@ jobs:
 
       - name: Show tag output
         run: |
-          echo "Tag output: ${{ needs.tag.outputs }}"
+          echo "Tag output: ${{ needs.tag.outputs.match }}"
 
       - name: Prepare ECR Repository name variables
         run: |
@@ -83,7 +83,7 @@ jobs:
           github-token: "${{ secrets.GITHUB_TOKEN }}"
           script: |
             const script = require('.github/scripts/build-docker-args.js');
-            return script(${{ inputs.build_args }});
+            return script('${{ inputs.build_args }}');
     
       - name: Download artifacts
         if: ${{ inputs.artifacts_download }}
