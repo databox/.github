@@ -99,5 +99,7 @@ jobs:
   
   manifest:
     uses: databox/.github/.github/workflows/manifest.yml@master
+    needs: 
+      - build
     with:
       tag: ${{ inputs.tag }}
