@@ -90,10 +90,10 @@ jobs:
               return ' ';
             }
             
-            const args = argsString.split('\n');
+            const args = argsString.split('\n').filter(arg => arg.trim() !== '');
             const result = args.map(arg => `--build-arg ${arg.replace(':', '=')}`).join(' ');
             return result;
-    
+                
       - name: Download artifacts
         if: ${{ inputs.artifacts_download }}
         uses: actions/download-artifact@v4
