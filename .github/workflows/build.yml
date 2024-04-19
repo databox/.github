@@ -55,10 +55,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Show tag output
-        run: |
-          echo "Tag output: ${{ needs.tag.outputs.match }}"
-
       - name: Prepare ECR Repository name variables
         run: |
           echo "ECR_REPOSITORY=$(echo ${{ github.repository }} | sed 's|[^/]*/||')" >> $GITHUB_ENV
