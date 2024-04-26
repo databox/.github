@@ -107,7 +107,9 @@ jobs:
           echo  ${{ steps.docker-build-args.outputs.result }}
           docker buildx create --name DLC_builder --use
           docker buildx build ${{ steps.docker-build-args.outputs.result }} -f ${{ inputs.dockerfile }} -t ${SERVICE_IMAGE_NAME}:${TAG} --progress plain --push --provenance false .
-  
+    outputs:
+      ecr_repository: ${{ env.ECR_REPOSITORY }}
+
   manifest:
     uses: databox/.github/.github/workflows/manifest.yml@master
     secrets: inherit
@@ -116,4 +118,5 @@ jobs:
       - tag
     if: needs.tag.outputs.match == 'true'
     with:
+      ecr_repository: ${{ needs.build.outputs.ecr_repository }}
       tag: ${{ inputs.tag }}

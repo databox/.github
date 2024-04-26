@@ -2,10 +2,14 @@ name: Build and push manifest
 on:
   workflow_call:
     inputs:
+      ecr_repository:
+        description: 'ECR repository name'
+        required: true
+        type: string
       tag:
         description: 'Tag name'
         required: true
-        type: string
+        type: string        
 jobs:
   manifest:
     name: Build and push manifest
@@ -25,13 +29,9 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Prepare ECR Repository name
-        run: |
-          echo "ECR_REPOSITORY=$(echo ${{ github.repository }} | sed 's|[^/]*/||')" >> $GITHUB_ENV
-
       - name: Build and push manifest
         run: |
-          SERVICE_IMAGE_NAME="${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}"
+          SERVICE_IMAGE_NAME="${{ env.ECR_REGISTRY }}/${{ inputs.ecr_repository }}"
           docker manifest create $SERVICE_IMAGE_NAME:${{ github.event.release.tag_name }} \
             --amend $SERVICE_IMAGE_NAME:${{ github.event.release.tag_name }}-amd64 \
             --amend $SERVICE_IMAGE_NAME:${{ github.event.release.tag_name }}-arm64
