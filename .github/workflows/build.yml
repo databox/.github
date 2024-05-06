@@ -57,7 +57,7 @@ jobs:
 
       - name: Prepare ECR Repository name variables
         run: |
-          echo "ECR_REPOSITORY=$(echo ${{ github.repository }} | awk '{print tolower($0)}' | sed 's|[^/]*/||')" >> $GITHUB_ENV
+          echo "ECR_REPOSITORY=$(echo ${{ github.repository }} | awk '{print tolower($0)}' | sed 's|[^/]*/||; s/_/-/g')" >> $GITHUB_ENV
           echo "ECR_TAG=${{ inputs.tag }}-${{ matrix.platform }}" >> $GITHUB_ENV
 
       - name: Configure AWS Credentials
