@@ -82,7 +82,8 @@ jobs:
           github-token: "${{ secrets.GITHUB_TOKEN }}"
           result-encoding: string
           script: |
-            const defaultArgsString = `PACKAGES_READ_TOKEN=${{ secrets.PACKAGES_READ_TOKEN }}
+            const defaultArgsString = `
+            PACKAGES_READ_TOKEN=${{ secrets.PACKAGES_READ_TOKEN }}
             PACKAGES_READ_USER=${{ secrets.PACKAGES_READ_USER }}`;
 
             const argsString = `${{ inputs.build_args }}` + defaultArgsString;
