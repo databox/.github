@@ -64,6 +64,9 @@ jobs:
         id: skip-build
         run: echo "skip=true" >> $GITHUB_OUTPUT
 
+      - name: Skippable
+        run: echo "${{ matrix.platform }}); skip=${{ steps.skip-build.outputs.skip }}; no skip=${{ !steps.skip-build.outputs.skip }}"
+
       - name: Checkout repository
         if: ${{ !steps.skip-build.outputs.skip }}
         uses: actions/checkout@v4
