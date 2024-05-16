@@ -58,9 +58,14 @@ jobs:
           - arm64
     steps:
       - name: Skip build
-        if: contains('${{ inputs.skip_build }}', ${{ matrix.platform }})
         id: skip-build
-        run: echo "skip=true" >> $GITHUB_OUTPUT
+        run: |
+          if [[ "${{ inputs.skip_build }}" == *"${{ matrix.platform }}"* ]]; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+            
       - name: Skippable
         run: echo "${{ matrix.platform }}); skip=${{ steps.skip-build.outputs.skip }}; no skip=${{ !steps.skip-build.outputs.skip }}"
 
