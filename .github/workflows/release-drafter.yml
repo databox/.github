@@ -10,6 +10,6 @@ jobs:
         id: release-drafter
         uses: release-drafter/release-drafter@v6
         with:
-          commitish: refs/heads/master
+          commitish: master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
