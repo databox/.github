@@ -36,11 +36,6 @@ on:
         required: false
         type: string
         default: ''
-      override_tag_check:
-        description: 'Override tag check'
-        required: false
-        type: boolean
-        default: false
 
 jobs:
   tag:
@@ -54,7 +49,7 @@ jobs:
     runs-on: ubnutu-22-04-${{ matrix.platform }}-1-core-4-ram
     needs:
       - tag
-    if: needs.tag.outputs.match == 'true' || inputs.override_tag_check
+    if: needs.tag.outputs.match == 'true'
     strategy:
       fail-fast: true
       matrix:
