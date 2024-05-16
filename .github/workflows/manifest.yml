@@ -9,7 +9,12 @@ on:
       tag:
         description: 'Tag name'
         required: true
-        type: string        
+        type: string 
+      additional_tags:
+        description: 'Additional tags'
+        required: false
+        type: string
+        default: ''       
 jobs:
   manifest:
     name: Build and push manifest
@@ -29,10 +34,27 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
+      - name: Additional tags
+        id: docker-additional-tags
+        uses: actions/github-script@v7
+        with:
+          debug: true
+          github-token: "${{ secrets.GITHUB_TOKEN }}"
+          result-encoding: string
+          script: |
+            const tagsString = `${{ inputs.additional_tags }}`
+
+            if (!tagsString) {
+              return ' ';
+            }
+
+            const tags = tagsString.split('\n').filter(tag => tag.trim() !== '');
+            const result = tags.map(tag => `--amend $SERVICE_IMAGE_NAME: ${tag}`).join(' ');
+            
+            return result;
+
       - name: Build and push manifest
         run: |
           SERVICE_IMAGE_NAME="${{ env.ECR_REGISTRY }}/${{ inputs.ecr_repository }}"
-          docker manifest create $SERVICE_IMAGE_NAME:${{ github.event.release.tag_name }} \
-            --amend $SERVICE_IMAGE_NAME:${{ github.event.release.tag_name }}-amd64 \
-            --amend $SERVICE_IMAGE_NAME:${{ github.event.release.tag_name }}-arm64
+          docker manifest create $SERVICE_IMAGE_NAME:${{ inputs.tag }} ${{ steps.docker-additional-tags.outputs.result }} \
           docker manifest push $SERVICE_IMAGE_NAME:${{ github.event.release.tag_name }}    

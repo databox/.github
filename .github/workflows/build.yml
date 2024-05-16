@@ -31,6 +31,12 @@ on:
         required: false
         type: string
         default: ''
+      skip_build:
+        description: 'List of platforms to skip build'
+        required: false
+        type: string
+        default: ''
+
 jobs:
   tag:
     uses: databox/.github/.github/workflows/tag-check.yml@master
@@ -53,6 +59,10 @@ jobs:
     env:
       ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
     steps:
+      - name: Skip build
+        if: contains('${{ inputs.skip_build }}', ${{ matrix.platform }})
+        run: exit 0
+
       - uses: actions/checkout@v4
 
       - name: Prepare ECR Repository name variables
@@ -116,6 +126,7 @@ jobs:
           docker buildx build ${{ steps.docker-build-args.outputs.result }} -f ${{ inputs.dockerfile }} -t ${SERVICE_IMAGE_NAME}:${TAG} --progress plain --push --provenance false .
     outputs:
       ecr_repository: ${{ env.ECR_REPOSITORY }}
+      additional_tags: ${{ env.ECR_TAG }}
 
   manifest:
     uses: databox/.github/.github/workflows/manifest.yml@master
@@ -127,3 +138,5 @@ jobs:
     with:
       ecr_repository: ${{ needs.build.outputs.ecr_repository }}
       tag: ${{ inputs.tag }}
+      additional_tags: ${{ needs.build.outputs.additional_tags }}
+      
