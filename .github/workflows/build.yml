@@ -107,7 +107,7 @@ jobs:
           fi
 
       - name: Skippable
-        run: echo "${{ matrix.platform }}); skip=${{ steps.skip-build.outputs.skip }}; no skip=${{ !steps.skip-build.outputs.skip }}"
+        run: echo "${{ matrix.platform }}); skip=${{ steps.skip-build.outputs.skip }}; no skip=${{ !fromJson(steps.skip-build.outputs.skip) }}"
 
       - name: Checkout repository
         if: ${{ !steps.skip-build.outputs.skip }}
