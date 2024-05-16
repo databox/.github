@@ -67,7 +67,7 @@ jobs:
           fi
             
       - name: Skippable
-        run: echo "${{ matrix.platform }}); skip=${{ steps.skip-build.outputs.skip }}; no skip=${{ !steps.skip-build.outputs.skip }}"
+        run: echo "${{ matrix.platform }}; skip=${{ steps.skip-build.outputs.skip }}; no skip=${{ !steps.skip-build.outputs.skip }}"
 
   # build:
   #   name: ${{ matrix.platform }}
