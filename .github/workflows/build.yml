@@ -48,7 +48,7 @@ jobs:
     secrets: inherit
     with:
       tag: ${{ inputs.tag }}
-      
+
   build:
     name: ${{ matrix.platform }}
     runs-on: ubnutu-22-04-${{ matrix.platform }}-1-core-4-ram
@@ -138,7 +138,7 @@ jobs:
           merge-multiple: true
 
       - name: Docker build and push ${{ matrix.platform }}
-        if: ${{ !steps.skip-build.outputs.skip }}
+        if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
         run: |
           TAG=${{ env.ECR_TAG }}
           SERVICE_IMAGE_NAME="${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}"
