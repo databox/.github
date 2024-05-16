@@ -45,11 +45,11 @@ jobs:
       tag: ${{ inputs.tag }}
   
   skip:
-    name: ${{ matrix.platform }}
+    name: skip ${{ matrix.platform }}
     runs-on: ubnutu-22-04-${{ matrix.platform }}-1-core-4-ram
     needs:
       - tag
-    if: needs.tag.outputs.match == 'true'
+    #if: needs.tag.outputs.match == 'true'
     strategy:
       fail-fast: true
       matrix:
