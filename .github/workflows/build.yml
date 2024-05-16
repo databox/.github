@@ -48,40 +48,7 @@ jobs:
     secrets: inherit
     with:
       tag: ${{ inputs.tag }}
-  
-  # skip:
-  #   name: skip ${{ matrix.platform }}
-  #   runs-on: ubnutu-22-04-${{ matrix.platform }}-1-core-4-ram
-  #   needs:
-  #     - tag
-  #   if: needs.tag.outputs.match == 'true' || inputs.override_tag_check
-  #   strategy:
-  #     fail-fast: true
-  #     matrix:
-  #       platform:
-  #         - amd64
-  #         - arm64
-  #   steps:
-  #     - name: Skip build
-  #       id: skip-build
-  #       run: |
-  #         if [[ "${{ inputs.skip_build }}" == *"${{ matrix.platform }}"* ]]; then
-  #           echo "skip=true" >> $GITHUB_OUTPUT
-  #         else
-  #           echo "skip=false" >> $GITHUB_OUTPUT
-  #         fi
-     
-  #     - name: Skippable
-  #       run: echo "${{ matrix.platform }}; skip=${{ steps.skip-build.outputs.skip }}; no skip=${{ !steps.skip-build.outputs.skip }}"
-
-  #     - name: Skip build 2
-  #       if: contains('${{ inputs.skip_build }}', ${{ matrix.platform }})
-  #       id: skip-build2
-  #       run: echo "skip=true" >> $GITHUB_OUTPUT
-
-  #     - name: Skippable 2
-  #       run: echo "${{ matrix.platform }}; skip=${{ steps.skip-build2.outputs.skip }}; no skip=${{ !steps.skip-build2.outputs.skip }}"
-
+      
   build:
     name: ${{ matrix.platform }}
     runs-on: ubnutu-22-04-${{ matrix.platform }}-1-core-4-ram
@@ -97,7 +64,7 @@ jobs:
     env:
       ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
     steps:
-      - name: Skip build
+      - name: Determine if build should be skipped
         id: skip-build
         run: |
           if [[ "${{ inputs.skip_build }}" == *"${{ matrix.platform }}"* ]]; then
@@ -106,21 +73,21 @@ jobs:
             echo "skip=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Skippable
-        run: echo "${{ matrix.platform }}); skip=${{ steps.skip-build.outputs.skip }}; no skip=${{ !fromJson(steps.skip-build.outputs.skip) }}"
+      - name: Build for platform ${{ matrix.platform }} 
+        run: echo "skip=${{ steps.skip-build.outputs.skip }}; dont skip=${{ !fromJson(steps.skip-build.outputs.skip) }}"
 
       - name: Checkout repository
-        if: ${{ !steps.skip-build.outputs.skip }}
+        if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
         uses: actions/checkout@v4
 
       - name: Prepare ECR Repository name variables
-        if: ${{ !steps.skip-build.outputs.skip }}
+        if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
         run: |
           echo "ECR_REPOSITORY=$(echo ${{ github.repository }} | awk '{print tolower($0)}' | sed 's|[^/]*/||; s/_/-/g')" >> $GITHUB_ENV
           echo "ECR_TAG=${{ inputs.tag }}-${{ matrix.platform }}" >> $GITHUB_ENV
 
       - name: Configure AWS Credentials
-        if: ${{ !steps.skip-build.outputs.skip }}
+        if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY }}
@@ -128,16 +95,16 @@ jobs:
           aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Login to Amazon ECR
-        if: ${{ !steps.skip-build.outputs.skip }}
+        if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Set up docker buildx
-        if: ${{ !steps.skip-build.outputs.skip }}
+        if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
         uses: docker/setup-buildx-action@v3
 
       - name: Generate docker build args
-        if: ${{ !steps.skip-build.outputs.skip }}
+        if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
         id: docker-build-args
         uses: actions/github-script@v7
         with:
@@ -163,7 +130,7 @@ jobs:
             return result;
 
       - name: Download artifacts
-        if: ${{ inputs.artifacts_download }} $$ ${{ !steps.skip-build.outputs.skip }}
+        if: ${{ inputs.artifacts_download }} $$ ${{ !fromJson(steps.skip-build.outputs.skip) }}
         uses: actions/download-artifact@v4
         with:
           name: ${{ inputs.artifacts_download_name }}
