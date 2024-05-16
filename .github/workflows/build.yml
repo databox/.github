@@ -36,6 +36,11 @@ on:
         required: false
         type: string
         default: ''
+      override_tag_check:
+        description: 'Override tag check'
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   tag:
@@ -49,7 +54,7 @@ jobs:
     runs-on: ubnutu-22-04-${{ matrix.platform }}-1-core-4-ram
     needs:
       - tag
-    #if: needs.tag.outputs.match == 'true'
+    if: needs.tag.outputs.match == 'true' || inputs.override_tag_check
     strategy:
       fail-fast: true
       matrix:
@@ -69,12 +74,20 @@ jobs:
       - name: Skippable
         run: echo "${{ matrix.platform }}; skip=${{ steps.skip-build.outputs.skip }}; no skip=${{ !steps.skip-build.outputs.skip }}"
 
+      - name: Skip build 2
+        if: contains('${{ inputs.skip_build }}', ${{ matrix.platform }})
+        id: skip-build2
+        run: echo "skip=true" >> $GITHUB_OUTPUT
+
+      - name: Skippable 2
+        run: echo "${{ matrix.platform }}; skip=${{ steps.skip-build2.outputs.skip }}; no skip=${{ !steps.skip-build2.outputs.skip }}"
+
   # build:
   #   name: ${{ matrix.platform }}
   #   runs-on: ubnutu-22-04-${{ matrix.platform }}-1-core-4-ram
   #   needs:
   #     - tag
-  #   if: needs.tag.outputs.match == 'true'
+  #   if: needs.tag.outputs.match == 'true' || inputs.override_tag_check
   #   strategy:
   #     fail-fast: true
   #     matrix:
