@@ -29,5 +29,7 @@ template: |
   ## Changes
 
   $CHANGES
+  
+  **Contributors**: $CONTRIBUTORS
 
   **Full Changelog**: https://github.com/$OWNER/$REPOSITORY/compare/$PREVIOUS_TAG...$RESOLVED_VERSION
