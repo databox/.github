@@ -109,7 +109,8 @@ jobs:
           script: |
             const defaultArgsString = `
             PACKAGES_READ_TOKEN=${{ secrets.PACKAGES_READ_TOKEN }}
-            PACKAGES_READ_USER=${{ secrets.PACKAGES_READ_USER }}`;
+            PACKAGES_READ_USER=${{ secrets.PACKAGES_READ_USER }}
+            RSA_PYTHON_MQ_LIB=${{ secrets.RSA_PYTHON_MQ_LIB }}`;
 
             const argsString = `${{ inputs.build_args }}` + defaultArgsString;
 
