@@ -31,13 +31,19 @@ on:
         required: false
         type: string
         default: ''
+      skip_build:
+        description: 'List of platforms to skip build'
+        required: false
+        type: string
+        default: ''
+
 jobs:
   tag:
     uses: databox/.github/.github/workflows/tag-check.yml@master
     secrets: inherit
     with:
       tag: ${{ inputs.tag }}
-  
+
   build:
     name: ${{ matrix.platform }}
     runs-on: ubnutu-22-04-${{ matrix.platform }}-1-core-4-ram
@@ -53,14 +59,30 @@ jobs:
     env:
       ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
     steps:
-      - uses: actions/checkout@v4
+      - name: Determine if build should be skipped
+        id: skip-build
+        run: |
+          if [[ "${{ inputs.skip_build }}" == *"${{ matrix.platform }}"* ]]; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build for platform ${{ matrix.platform }} 
+        run: echo "skip=${{ steps.skip-build.outputs.skip }}; dont skip=${{ !fromJson(steps.skip-build.outputs.skip) }}"
+
+      - name: Checkout repository
+        if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
+        uses: actions/checkout@v4
 
       - name: Prepare ECR Repository name variables
+        if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
         run: |
           echo "ECR_REPOSITORY=$(echo ${{ github.repository }} | awk '{print tolower($0)}' | sed 's|[^/]*/||; s/_/-/g')" >> $GITHUB_ENV
           echo "ECR_TAG=${{ inputs.tag }}-${{ matrix.platform }}" >> $GITHUB_ENV
 
       - name: Configure AWS Credentials
+        if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY }}
@@ -68,13 +90,16 @@ jobs:
           aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Login to Amazon ECR
+        if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Set up docker buildx
+        if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
         uses: docker/setup-buildx-action@v3
 
       - name: Generate docker build args
+        if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
         id: docker-build-args
         uses: actions/github-script@v7
         with:
@@ -100,7 +125,7 @@ jobs:
             return result;
 
       - name: Download artifacts
-        if: ${{ inputs.artifacts_download }}
+        if: ${{ inputs.artifacts_download }} $$ ${{ !fromJson(steps.skip-build.outputs.skip) }}
         uses: actions/download-artifact@v4
         with:
           name: ${{ inputs.artifacts_download_name }}
@@ -108,6 +133,7 @@ jobs:
           merge-multiple: true
 
       - name: Docker build and push ${{ matrix.platform }}
+        if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
         run: |
           TAG=${{ env.ECR_TAG }}
           SERVICE_IMAGE_NAME="${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}"
@@ -116,9 +142,10 @@ jobs:
           docker buildx build ${{ steps.docker-build-args.outputs.result }} -f ${{ inputs.dockerfile }} -t ${SERVICE_IMAGE_NAME}:${TAG} --progress plain --push --provenance false .
     outputs:
       ecr_repository: ${{ env.ECR_REPOSITORY }}
+      additional_tags: ${{ env.ECR_TAG }}
 
   manifest:
-    uses: databox/.github/.github/workflows/manifest.yml@master
+    uses: databox/.github/.github/workflows/manifest.yml@support-skip-build-platform
     secrets: inherit
     needs: 
       - build
@@ -127,3 +154,5 @@ jobs:
     with:
       ecr_repository: ${{ needs.build.outputs.ecr_repository }}
       tag: ${{ inputs.tag }}
+      additional_tags: ${{ needs.build.outputs.additional_tags }}
+      
