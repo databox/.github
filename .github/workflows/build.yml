@@ -166,7 +166,7 @@ jobs:
       result: "${{ steps.read.outputs.result }}"
 
   manifest:
-    uses: databox/.github/.github/workflows/manifest.yml@manifest
+    uses: databox/.github/.github/workflows/manifest.yml@manifets
     secrets: inherit
     needs: 
       - build
