@@ -14,7 +14,12 @@ on:
         description: 'Additional tags'
         required: false
         type: string
-        default: ''       
+        default: ''      
+      skip_build:
+          description: 'List of platforms to skip build'
+          required: false
+          type: string
+          default: ''
 jobs:
   manifest:
     name: Build and push manifest
@@ -55,7 +60,8 @@ jobs:
 
       - name: Build and push manifest
         run: |
-          SERVICE_IMAGE_NAME="${{ env.ECR_REGISTRY }}/${{ inputs.ecr_repository }}"
+          SERVICE_IMAGE_NAME="${{ env.ECR_REGISTRY }}/${{ inputs.ecr_repository }}"    
           docker manifest create $SERVICE_IMAGE_NAME:${{ inputs.tag }} \
-          ${{ steps.docker-additional-tags.outputs.result }} \
+            --amend $SERVICE_IMAGE_NAME:${{ inputs.tag }}-amd64 \
+            --amend $SERVICE_IMAGE_NAME:${{ inputs.tag }}-arm64 \
           docker manifest push $SERVICE_IMAGE_NAME:${{ github.event.release.tag_name }}    
