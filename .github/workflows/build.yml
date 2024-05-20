@@ -145,7 +145,7 @@ jobs:
       additional_tags: ${{ env.ECR_TAG }}
 
   manifest:
-    uses: databox/.github/.github/workflows/manifest.yml@support-skip-build-platform
+    uses: databox/.github/.github/workflows/manifest.yml@master
     secrets: inherit
     needs: 
       - build
