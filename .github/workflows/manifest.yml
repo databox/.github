@@ -63,5 +63,5 @@ jobs:
           SERVICE_IMAGE_NAME="${{ env.ECR_REGISTRY }}/${{ inputs.ecr_repository }}"    
           docker manifest create $SERVICE_IMAGE_NAME:${{ inputs.tag }} \
             --amend $SERVICE_IMAGE_NAME:${{ inputs.tag }}-amd64 \
-            --amend $SERVICE_IMAGE_NAME:${{ inputs.tag }}-arm64 \
+            --amend $SERVICE_IMAGE_NAME:${{ inputs.tag }}-arm64
           docker manifest push $SERVICE_IMAGE_NAME:${{ github.event.release.tag_name }}    
