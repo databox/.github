@@ -181,7 +181,8 @@ jobs:
       - name: Read tags
         id: read
         run: |
-          echo "tags=$(ls ${{ runner.temp }}/${{ inputs.tag }})" >> $GITHUB_OUTPUT
+          tags=$(ls ${{ runner.temp }}/${{ inputs.tag }} )
+          echo "tags=$tags" >> $GITHUB_OUTPUT
 
   # Build and push manifest
   manifest:
