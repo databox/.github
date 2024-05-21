@@ -129,7 +129,7 @@ jobs:
             return result;
 
       - name: Download artifacts
-        if: ${{ inputs.artifacts_download }} $$ ${{ !fromJson(steps.skip-build.outputs.skip) }}
+        if: ${{ inputs.artifacts_download }} && ${{ !fromJson(steps.skip-build.outputs.skip) }}
         uses: actions/download-artifact@v4
         with:
           name: ${{ inputs.artifacts_download_name }}
@@ -148,16 +148,16 @@ jobs:
       - name: Save ${{ inputs.tag }}-${{ matrix.platform }} tag
         if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
         run: |
-          touch ${RUNNER_TEMP}/${{ inputs.tag }}-${{ matrix.platform }}
-          echo ${{ inputs.tag }}-${{ matrix.platform }} >> ${RUNNER_TEMP}/${{ inputs.tag }}-${{ matrix.platform }}
-          cat ${RUNNER_TEMP}/${{ inputs.tag }}-${{ matrix.platform }}
+          touch ${{ runner.temp }}/${{ inputs.tag }}-${{ matrix.platform }}
+          echo ${{ inputs.tag }}-${{ matrix.platform }} >> ${{ runner.temp }}/${{ inputs.tag }}-${{ matrix.platform }}
+          cat ${{ runner.temp }}/${{ inputs.tag }}-${{ matrix.platform }}
 
       - name: Upload ${{ inputs.tag }}-${{ matrix.platform }} tag to GitHub Actions Artifacts
         if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
         uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.tag }}-${{ matrix.platform }}
-          path: ${RUNNER_TEMP}
+          path: ${{ runner.temp }}
           retention-days: 1
     outputs:
       ecr_repository: ${{ env.ECR_REPOSITORY }}
