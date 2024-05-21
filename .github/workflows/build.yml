@@ -45,7 +45,7 @@ jobs:
       tag: ${{ inputs.tag }}
 
   build:
-    name: ${{ matrix.platform }}
+    name: Build ${{ inputs.tag }}-${{ matrix.platform }}
     runs-on: ubnutu-22-04-${{ matrix.platform }}-1-core-4-ram
     needs:
       - tag_check
@@ -68,7 +68,7 @@ jobs:
             echo "skip=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Create tag directory
+      - name: Create ${{ inputs.tag }} directory
         if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
         run: |
           mkdir -p ${{ inputs.tag }}
@@ -151,15 +151,15 @@ jobs:
       - name: Save built tag
         if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
         run: |
-          touch ${{ inputs.tag }}-${{ matrix.platform }}
-          echo ${{ inputs.tag }}-${{ matrix.platform }} >> ${{ inputs.tag }}-${{ matrix.platform }}
+          touch ./${{ inputs.tag }}/${{ inputs.tag }}-${{ matrix.platform }}
+          echo ${{ inputs.tag }}-${{ matrix.platform }} >> ./${{ inputs.tag }}/${{ inputs.tag }}-${{ matrix.platform }}
 
       - name: Upload release tag to GitHub Actions Artifacts
         if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
         uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.tag }}-${{ matrix.platform }}
-          path: ${{ inputs.tag }}
+          path: ./${{ inputs.tag }}
           retention-days: 1
     outputs:
       ecr_repository: ${{ env.ECR_REPOSITORY }}
