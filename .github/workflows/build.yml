@@ -148,9 +148,8 @@ jobs:
       - name: Save ${{ inputs.tag }}-${{ matrix.platform }} tag
         if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
         run: |
+          mkdir -p ${{ runner.temp }}/${{ inputs.tag }}
           touch ${{ runner.temp }}/${{ inputs.tag }}/${{ inputs.tag }}-${{ matrix.platform }}
-          echo ${{ inputs.tag }}-${{ matrix.platform }} >> ${{ runner.temp }}/${{ inputs.tag }}/${{ inputs.tag }}-${{ matrix.platform }}
-          cat ${{ runner.temp }}/${{ inputs.tag }}/${{ inputs.tag }}-${{ matrix.platform }}
 
       - name: Upload ${{ inputs.tag }}-${{ matrix.platform }} tag to GitHub Actions Artifacts
         if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
@@ -182,7 +181,7 @@ jobs:
       - name: Read tags
         id: read
         run: |
-          echo "{tags}={$(ls ${{ runner.temp }}/${{ inputs.tag }})}" >> $GITHUB_OUTPUT
+          echo "tags=$(ls ${{ runner.temp }}/${{ inputs.tag }})" >> $GITHUB_OUTPUT
 
   # Build and push manifest
   manifest:
