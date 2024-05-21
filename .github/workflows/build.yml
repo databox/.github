@@ -170,25 +170,19 @@ jobs:
       - tag_check
       - build
     outputs:
-      tags: ${{ steps.read.outputs.result }}
+      tags: ${{ steps.read.outputs.tags }}
     steps:
       - name: Download release tag from GitHub Actions Artifacts
         uses: actions/download-artifact@v4
         with:
-          path: ${{ inputs.tag }}
+          path: ${{ runner.temp }}/${{ inputs.tag }}
           pattern: ${{ inputs.tag }}-*
           merge-multiple: true
+
       - name: Read tags
         id: read
-        uses: actions/github-script@v7
-        with:
-          debug: true
-          github-token: "${{ secrets.GITHUB_TOKEN }}"
-          result-encoding: string
-          script: |
-            const fs = require('fs');
-            const tags = fs.readdirSync('${{ inputs.tag }}).map(tag => tag);
-            return tags.join('\n');
+        run: |
+          echo "::set-output name=tags::$(ls ${{ runner.temp }}/${{ inputs.tag }})"
 
   # Build and push manifest
   manifest:
@@ -198,7 +192,7 @@ jobs:
       - tag_check
       - build
       - ecr_tags
-    if: needs.tag.outputs.match == 'true'
+    if: needs.tag_check.outputs.match == 'true'
     with:
       ecr_repository: ${{ needs.build.outputs.ecr_repository }}
       tag: ${{ inputs.tag }}
