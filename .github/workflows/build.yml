@@ -40,7 +40,7 @@ on:
 jobs:
   # Check tag setisfiy semantic versioning
   tag_check:
-    uses: databox/.github/.github/workflows/tag-check.yml@manifets
+    uses: databox/.github/.github/workflows/tag-check.yml@master
     secrets: inherit
     with:
       tag: ${{ inputs.tag }}
@@ -187,7 +187,7 @@ jobs:
 
   # Build and push manifest
   manifest:
-    uses: databox/.github/.github/workflows/manifest.yml@manifets
+    uses: databox/.github/.github/workflows/manifest.yml@master
     secrets: inherit
     needs: 
       - tag_check
