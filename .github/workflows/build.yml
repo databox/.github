@@ -49,7 +49,7 @@ jobs:
     runs-on: ubnutu-22-04-${{ matrix.platform }}-1-core-4-ram
     needs:
       - tag_check
-    if: needs.tag.outputs.match == 'true'
+    if: needs.tag_check.outputs.match == 'true'
     strategy:
       fail-fast: true
       matrix:
