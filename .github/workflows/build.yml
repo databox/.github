@@ -38,12 +38,14 @@ on:
         default: ''
 
 jobs:
+  # Check tag setisfiy semantic versioning
   tag_check:
-    uses: databox/.github/.github/workflows/tag-check.yml@master
+    uses: databox/.github/.github/workflows/tag-check.yml@manifets
     secrets: inherit
     with:
       tag: ${{ inputs.tag }}
 
+  # Build image for each platform
   build:
     name: Build ${{ inputs.tag }}-${{ matrix.platform }}
     runs-on: ubnutu-22-04-${{ matrix.platform }}-1-core-4-ram
@@ -73,6 +75,7 @@ jobs:
         run: |
           pwd
           mkdir -p ${{ inputs.tag }}
+          cd ${{ inputs.tag }}
 
       - name: Build for platform ${{ matrix.platform }} 
         run: echo "skip=${{ steps.skip-build.outputs.skip }}; dont skip=${{ !fromJson(steps.skip-build.outputs.skip) }}"
@@ -167,6 +170,7 @@ jobs:
     outputs:
       ecr_repository: ${{ env.ECR_REPOSITORY }}
   
+  # Get built tags
   ecr_tags:
     name: Get built tags
     runs-on: ubnutu-22-04-arm64-1-core-4-ram
@@ -194,6 +198,7 @@ jobs:
             const tags = fs.readdirSync('${{ inputs.tag }}).map(tag => tag);
             return tags.join('\n');
 
+  # Build and push manifest
   manifest:
     uses: databox/.github/.github/workflows/manifest.yml@manifets
     secrets: inherit
