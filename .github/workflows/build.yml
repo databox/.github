@@ -76,6 +76,7 @@ jobs:
           pwd
           mkdir -p ${{ inputs.tag }}
           cd ${{ inputs.tag }}
+          pwd
 
       - name: Build for platform ${{ matrix.platform }} 
         run: echo "skip=${{ steps.skip-build.outputs.skip }}; dont skip=${{ !fromJson(steps.skip-build.outputs.skip) }}"
@@ -143,7 +144,7 @@ jobs:
           path: ${{ inputs.artifacts_download_path }}
           merge-multiple: true
 
-      - name: Docker build and push ${{ matrix.platform }}
+      - name: Docker build and push ${{ inputs.tag }}-${{ matrix.platform }} image
         if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
         run: |
           TAG=${{ env.ECR_TAG }}
