@@ -153,6 +153,7 @@ jobs:
       ecr_repository: ${{ env.ECR_REPOSITORY }}
   
   ecr_tags:
+    name: Get built tags
     runs-on: ubnutu-22-04-arm64-1-core-4-ram
     needs: 
       - tag_check
