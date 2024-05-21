@@ -38,18 +38,20 @@ on:
         default: ''
 
 jobs:
-  tag:
+  # Check tag setisfiy semantic versioning
+  tag_check:
     uses: databox/.github/.github/workflows/tag-check.yml@master
     secrets: inherit
     with:
       tag: ${{ inputs.tag }}
 
+  # Build image for each platform
   build:
-    name: ${{ matrix.platform }}
+    name: Build ${{ inputs.tag }}-${{ matrix.platform }}
     runs-on: ubnutu-22-04-${{ matrix.platform }}-1-core-4-ram
     needs:
-      - tag
-    if: needs.tag.outputs.match == 'true'
+      - tag_check
+    if: needs.tag_check.outputs.match == 'true'
     strategy:
       fail-fast: true
       matrix:
@@ -76,6 +78,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Prepare ECR Repository name variables
+        id: ecr
         if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
         run: |
           echo "ECR_REPOSITORY=$(echo ${{ github.repository }} | awk '{print tolower($0)}' | sed 's|[^/]*/||; s/_/-/g')" >> $GITHUB_ENV
@@ -126,14 +129,14 @@ jobs:
             return result;
 
       - name: Download artifacts
-        if: ${{ inputs.artifacts_download }} $$ ${{ !fromJson(steps.skip-build.outputs.skip) }}
+        if: ${{ inputs.artifacts_download }} && ${{ !fromJson(steps.skip-build.outputs.skip) }}
         uses: actions/download-artifact@v4
         with:
           name: ${{ inputs.artifacts_download_name }}
           path: ${{ inputs.artifacts_download_path }}
           merge-multiple: true
 
-      - name: Docker build and push ${{ matrix.platform }}
+      - name: Docker build and push ${{ inputs.tag }}-${{ matrix.platform }} image
         if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
         run: |
           TAG=${{ env.ECR_TAG }}
@@ -141,19 +144,58 @@ jobs:
           echo  ${{ steps.docker-build-args.outputs.result }}
           docker buildx create --name DLC_builder --use
           docker buildx build ${{ steps.docker-build-args.outputs.result }} -f ${{ inputs.dockerfile }} -t ${SERVICE_IMAGE_NAME}:${TAG} --progress plain --push --provenance false .
+      
+      - name: Save ${{ inputs.tag }}-${{ matrix.platform }} tag
+        if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
+        run: |
+          mkdir -p ${{ runner.temp }}/${{ inputs.tag }}
+          touch ${{ runner.temp }}/${{ inputs.tag }}/${{ inputs.tag }}-${{ matrix.platform }}
+
+      - name: Upload ${{ inputs.tag }}-${{ matrix.platform }} tag to GitHub Actions Artifacts
+        if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.tag }}-${{ matrix.platform }}
+          path: ${{ runner.temp }}/${{ inputs.tag }}
+          retention-days: 1
     outputs:
       ecr_repository: ${{ env.ECR_REPOSITORY }}
-      additional_tags: ${{ env.ECR_TAG }}
+  
+  # Get built tags
+  built_tags:
+    name: Get built tags
+    runs-on: ubnutu-22-04-arm64-1-core-4-ram
+    needs: 
+      - tag_check
+      - build
+    outputs:
+      tags: ${{ steps.read.outputs.files }}
+    steps:
+      - name: Download release tag from GitHub Actions Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ${{ runner.temp }}/${{ inputs.tag }}
+          pattern: ${{ inputs.tag }}-*
+          merge-multiple: true
 
+      - name: Read tags
+        id: read
+        run: |
+          DIRECTORY_PATH=${{ runner.temp }}/${{ inputs.tag }}
+          FILES=$(ls $DIRECTORY_PATH | tr '\n' ' ')
+          echo "files=$FILES" >> $GITHUB_OUTPUT
+
+  # Build and push manifest
   manifest:
     uses: databox/.github/.github/workflows/manifest.yml@master
     secrets: inherit
     needs: 
+      - tag_check
       - build
-      - tag
-    if: needs.tag.outputs.match == 'true'
+      - built_tags
+    if: needs.tag_check.outputs.match == 'true'
     with:
       ecr_repository: ${{ needs.build.outputs.ecr_repository }}
       tag: ${{ inputs.tag }}
-      additional_tags: ${{ needs.build.outputs.additional_tags }}
+      additional_tags: ${{ needs.built_tags.outputs.tags }}
       

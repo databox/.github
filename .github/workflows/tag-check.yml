@@ -12,7 +12,7 @@ on:
       
 jobs:
   tag-filter:
-    name: Tag ${{ inputs.tag }}
+    name: Check tag ${{ inputs.tag }}
     runs-on: ubnutu-22-04-arm64-1-core-4-ram
     timeout-minutes: 1
     outputs:
