@@ -71,6 +71,7 @@ jobs:
       - name: Create ${{ inputs.tag }} directory
         if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
         run: |
+          pwd
           mkdir -p ${{ inputs.tag }}
 
       - name: Build for platform ${{ matrix.platform }} 
@@ -148,13 +149,15 @@ jobs:
           docker buildx create --name DLC_builder --use
           docker buildx build ${{ steps.docker-build-args.outputs.result }} -f ${{ inputs.dockerfile }} -t ${SERVICE_IMAGE_NAME}:${TAG} --progress plain --push --provenance false .
       
-      - name: Save built tag
+      - name: Save ${{ inputs.tag }}-${{ matrix.platform }} tag
         if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
         run: |
-          touch ./${{ inputs.tag }}/${{ inputs.tag }}-${{ matrix.platform }}
-          echo ${{ inputs.tag }}-${{ matrix.platform }} >> ./${{ inputs.tag }}/${{ inputs.tag }}-${{ matrix.platform }}
+          pwd
+          cd ${{ inputs.tag }}
+          touch ${{ inputs.tag }}-${{ matrix.platform }}
+          echo ${{ inputs.tag }}-${{ matrix.platform }} >> ${{ inputs.tag }}-${{ matrix.platform }}
 
-      - name: Upload release tag to GitHub Actions Artifacts
+      - name: Upload ${{ inputs.tag }}-${{ matrix.platform }} tag to GitHub Actions Artifacts
         if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
         uses: actions/upload-artifact@v4
         with:
