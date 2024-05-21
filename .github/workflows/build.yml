@@ -181,7 +181,8 @@ jobs:
       - name: Read tags
         id: read
         run: |
-          tags=$(ls ${{ runner.temp }}/${{ inputs.tag }})
+          cd ${{ runner.temp }}/${{ inputs.tag }}
+          tags=$(ls -1 | tr '\n' '\n')
           echo $tags
           echo "tags=$tags" >> $GITHUB_OUTPUT
 
