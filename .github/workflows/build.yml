@@ -61,10 +61,6 @@ jobs:
     env:
       ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
     steps:
-      - name: ENV
-        run: |
-          env
-          
       - name: Determine if build should be skipped
         id: skip-build
         run: |
@@ -73,14 +69,6 @@ jobs:
           else
             echo "skip=false" >> $GITHUB_OUTPUT
           fi
-
-      - name: Create ${{ inputs.tag }} directory
-        if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
-        run: |
-          pwd
-          mkdir -p ${{ inputs.tag }}
-          cd ${{ inputs.tag }}
-          pwd
 
       - name: Build for platform ${{ matrix.platform }} 
         run: echo "skip=${{ steps.skip-build.outputs.skip }}; dont skip=${{ !fromJson(steps.skip-build.outputs.skip) }}"
@@ -160,17 +148,16 @@ jobs:
       - name: Save ${{ inputs.tag }}-${{ matrix.platform }} tag
         if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
         run: |
-          pwd
-          cd ${{ inputs.tag }}
-          touch ${{ inputs.tag }}-${{ matrix.platform }}
-          echo ${{ inputs.tag }}-${{ matrix.platform }} >> ${{ inputs.tag }}-${{ matrix.platform }}
+          touch ${RUNNER_TEMP}/${{ inputs.tag }}-${{ matrix.platform }}
+          echo ${{ inputs.tag }}-${{ matrix.platform }} >> ${RUNNER_TEMP}/${{ inputs.tag }}-${{ matrix.platform }}
+          cat ${RUNNER_TEMP}/${{ inputs.tag }}-${{ matrix.platform }}
 
       - name: Upload ${{ inputs.tag }}-${{ matrix.platform }} tag to GitHub Actions Artifacts
         if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
         uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.tag }}-${{ matrix.platform }}
-          path: ./${{ inputs.tag }}
+          path: ${RUNNER_TEMP}
           retention-days: 1
     outputs:
       ecr_repository: ${{ env.ECR_REPOSITORY }}
