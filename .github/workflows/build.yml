@@ -61,6 +61,10 @@ jobs:
     env:
       ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
     steps:
+      - name: ENV
+        run: |
+          env
+          
       - name: Determine if build should be skipped
         id: skip-build
         run: |
