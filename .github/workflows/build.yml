@@ -68,6 +68,11 @@ jobs:
             echo "skip=false" >> $GITHUB_OUTPUT
           fi
 
+      - name: Create tag directory
+        if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
+        run: |
+          mkdir -p ${{ inputs.tag }}
+
       - name: Build for platform ${{ matrix.platform }} 
         run: echo "skip=${{ steps.skip-build.outputs.skip }}; dont skip=${{ !fromJson(steps.skip-build.outputs.skip) }}"
 
@@ -143,7 +148,14 @@ jobs:
           docker buildx create --name DLC_builder --use
           docker buildx build ${{ steps.docker-build-args.outputs.result }} -f ${{ inputs.dockerfile }} -t ${SERVICE_IMAGE_NAME}:${TAG} --progress plain --push --provenance false .
       
+      - name: Save built tag
+        if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
+        run: |
+          touch ${{ inputs.tag }}-${{ matrix.platform }}
+          echo ${{ inputs.tag }}-${{ matrix.platform }} >> ${{ inputs.tag }}-${{ matrix.platform }}
+
       - name: Upload release tag to GitHub Actions Artifacts
+        if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
         uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.tag }}-${{ matrix.platform }}
@@ -164,7 +176,7 @@ jobs:
       - name: Download release tag from GitHub Actions Artifacts
         uses: actions/download-artifact@v4
         with:
-          path: tags
+          path: ${{ inputs.tag }}
           pattern: ${{ inputs.tag }}-*
           merge-multiple: true
       - name: Read tags
@@ -176,7 +188,7 @@ jobs:
           result-encoding: string
           script: |
             const fs = require('fs');
-            const tags = fs.readdirSync('./tags').map(tag => tag);
+            const tags = fs.readdirSync('${{ inputs.tag }}).map(tag => tag);
             return tags.join('\n');
 
   manifest:
