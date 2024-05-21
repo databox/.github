@@ -169,7 +169,7 @@ jobs:
       - tag_check
       - build
     outputs:
-      tags: ${{ steps.read.outputs.tags }}
+      tags: ${{ steps.read.outputs.files }}
     steps:
       - name: Download release tag from GitHub Actions Artifacts
         uses: actions/download-artifact@v4
@@ -181,10 +181,9 @@ jobs:
       - name: Read tags
         id: read
         run: |
-          cd ${{ runner.temp }}/${{ inputs.tag }}
-          tags=$(ls -1 | tr '\n' '\n')
-          echo $tags
-          echo "tags=$tags" >> $GITHUB_OUTPUT
+          DIRECTORY_PATH=${{ runner.temp }}/${{ inputs.tag }}
+          FILES=$(ls $DIRECTORY_PATH | tr '\n' ' ')
+          echo "files=$FILES" >> $GITHUB_OUTPUT
 
   # Build and push manifest
   manifest:
