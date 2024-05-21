@@ -148,22 +148,22 @@ jobs:
       - name: Save ${{ inputs.tag }}-${{ matrix.platform }} tag
         if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
         run: |
-          touch ${{ runner.temp }}/${{ inputs.tag }}-${{ matrix.platform }}
-          echo ${{ inputs.tag }}-${{ matrix.platform }} >> ${{ runner.temp }}/${{ inputs.tag }}-${{ matrix.platform }}
-          cat ${{ runner.temp }}/${{ inputs.tag }}-${{ matrix.platform }}
+          touch ${{ runner.temp }}/${{ inputs.tag }}/${{ inputs.tag }}-${{ matrix.platform }}
+          echo ${{ inputs.tag }}-${{ matrix.platform }} >> ${{ runner.temp }}/${{ inputs.tag }}/${{ inputs.tag }}-${{ matrix.platform }}
+          cat ${{ runner.temp }}/${{ inputs.tag }}/${{ inputs.tag }}-${{ matrix.platform }}
 
       - name: Upload ${{ inputs.tag }}-${{ matrix.platform }} tag to GitHub Actions Artifacts
         if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
         uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.tag }}-${{ matrix.platform }}
-          path: ${{ runner.temp }}
+          path: ${{ runner.temp }}/${{ inputs.tag }}
           retention-days: 1
     outputs:
       ecr_repository: ${{ env.ECR_REPOSITORY }}
   
   # Get built tags
-  ecr_tags:
+  built_tags:
     name: Get built tags
     runs-on: ubnutu-22-04-arm64-1-core-4-ram
     needs: 
@@ -182,7 +182,7 @@ jobs:
       - name: Read tags
         id: read
         run: |
-          echo "::set-output name=tags::$(ls ${{ runner.temp }}/${{ inputs.tag }})"
+          echo "{tags}={$(ls ${{ runner.temp }}/${{ inputs.tag }})}" >> $GITHUB_OUTPUT
 
   # Build and push manifest
   manifest:
@@ -191,10 +191,10 @@ jobs:
     needs: 
       - tag_check
       - build
-      - ecr_tags
+      - built_tags
     if: needs.tag_check.outputs.match == 'true'
     with:
       ecr_repository: ${{ needs.build.outputs.ecr_repository }}
       tag: ${{ inputs.tag }}
-      additional_tags: ${{ needs.ecr_tags.outputs.tags }}
+      additional_tags: ${{ needs.built_tags.outputs.tags }}
       
