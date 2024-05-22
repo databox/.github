@@ -1,0 +1,15 @@
+name: Tests
+on:
+  pull_request:
+    types: [opened, reopened, labeled, unlabeled, edited, synchronize]
+    branches: [master]
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Run test build workflow
+        run: |
+          GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} ./tests/test_build_workflow.sh
