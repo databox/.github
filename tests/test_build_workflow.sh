@@ -17,7 +17,7 @@ curl -X POST \
   -H "Accept: application/vnd.github.v3+json" \
   -H "Authorization: token $GITHUB_TOKEN" \
   https://api.github.com/repos/databox/.github/actions/workflows/tag-check.yml/dispatches \
-  -d '{"ref":"$ref","inputs":{"tag":"v1.0.0"}}'
+  -d '{"ref":"tag_check","inputs":{"tag":"v1.0.0"}}'
 
 
 #run non-semantic versioning test
