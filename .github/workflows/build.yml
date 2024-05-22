@@ -36,11 +36,21 @@ on:
         required: false
         type: string
         default: ''
-      tag_regex:
+      tag_check_regex:
         description: 'Regex to check tag'
         required: false
         type: string
         default: '^([0-9]+)\.([0-9]+)\.([0-9]+)(-([0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*))?(\\+([0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*))?$'
+      extract_semver_from_tag:
+        description: 'Extract semver from tag'
+        required: false
+        type: boolean
+        default: false
+      tag_extract_regex:
+          description: 'Regex to extract semver from tag'
+          required: false
+          type: string
+          default: '([^@]+)$'
 jobs:
   # Check tag setisfiy semantic versioning
   tag_check:
@@ -48,11 +58,14 @@ jobs:
     secrets: inherit
     with:
       tag: ${{ inputs.tag }}
-      regex: ${{ inputs.tag_regex }}
+      tag_check_regex: ${{ inputs.tag_check_regex }}
+      extract_semver_from_tag: ${{ inputs.extract_semver_from_tag }}
+      tag_extract_regex: ${{ inputs.tag_extract_regex }}
+
 
   # Build image for each platform
   build:
-    name: Build ${{ inputs.tag }}-${{ matrix.platform }}
+    name: Build ${{ needs.tag_check.outputs.semver }}-${{ matrix.platform }}
     runs-on: ubnutu-22-04-${{ matrix.platform }}-1-core-4-ram
     needs:
       - tag_check
@@ -75,7 +88,7 @@ jobs:
             echo "skip=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Build for platform ${{ matrix.platform }} 
+      - name: Build version ${{ needs.tag_check.outputs.semver }} for platform ${{ matrix.platform }} 
         run: echo "skip=${{ steps.skip-build.outputs.skip }}; dont skip=${{ !fromJson(steps.skip-build.outputs.skip) }}"
 
       - name: Checkout repository
@@ -87,7 +100,7 @@ jobs:
         if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
         run: |
           echo "ECR_REPOSITORY=$(echo ${{ github.repository }} | awk '{print tolower($0)}' | sed 's|[^/]*/||; s/_/-/g')" >> $GITHUB_ENV
-          echo "ECR_TAG=${{ inputs.tag }}-${{ matrix.platform }}" >> $GITHUB_ENV
+          echo "ECR_TAG=${{ needs.tag_check.outputs.semver }}-${{ matrix.platform }}" >> $GITHUB_ENV
 
       - name: Configure AWS Credentials
         if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
@@ -118,7 +131,8 @@ jobs:
             const defaultArgsString = `
             PACKAGES_READ_TOKEN=${{ secrets.PACKAGES_READ_TOKEN }}
             PACKAGES_READ_USER=${{ secrets.PACKAGES_READ_USER }}
-            RSA_PYTHON_MQ_LIB=${{ secrets.RSA_PYTHON_MQ_LIB }}`;
+            RSA_PYTHON_MQ_LIB=${{ secrets.RSA_PYTHON_MQ_LIB }}
+            BUILD_VERSION=${{ needs.tag_check.outputs.semver }}`;
 
             const argsString = `${{ inputs.build_args }}` + defaultArgsString;
 
@@ -141,30 +155,29 @@ jobs:
           path: ${{ inputs.artifacts_download_path }}
           merge-multiple: true
 
-      - name: Docker build and push ${{ inputs.tag }}-${{ matrix.platform }} image
+      - name: Docker build and push ${{ needs.tag_check.outputs.semver }}-${{ matrix.platform }} image
         if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
         run: |
           TAG=${{ env.ECR_TAG }}
-          SERVICE_IMAGE_NAME="${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}"
-          echo  ${{ steps.docker-build-args.outputs.result }}
+          IMAGE="${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}"
           docker buildx create --name DLC_builder --use
-          docker buildx build ${{ steps.docker-build-args.outputs.result }} -f ${{ inputs.dockerfile }} -t ${SERVICE_IMAGE_NAME}:${TAG} --progress plain --push --provenance false .
+          docker buildx build ${{ steps.docker-build-args.outputs.result }} -f ${{ inputs.dockerfile }} -t ${IMAGE}:${TAG} --progress plain --push --provenance false .
       
-      - name: Save ${{ inputs.tag }}-${{ matrix.platform }} tag
+      - name: Save ${{ needs.tag_check.outputs.semver }}-${{ matrix.platform }} tag
         if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
         run: |
-          mkdir -p ${{ runner.temp }}/${{ inputs.tag }}
-          touch ${{ runner.temp }}/${{ inputs.tag }}/${{ inputs.tag }}-${{ matrix.platform }}
+          mkdir -p ${{ runner.temp }}/${{ needs.tag_check.outputs.semver }}
+          touch ${{ runner.temp }}/${{ needs.tag_check.outputs.semver }}/${{ needs.tag_check.outputs.semver }}-${{ matrix.platform }}
 
-      - name: Upload ${{ inputs.tag }}-${{ matrix.platform }} tag to GitHub Actions Artifacts
+      - name: Upload ${{ needs.tag_check.outputs.semver }}-${{ matrix.platform }} tag to GitHub Actions Artifacts
         if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ inputs.tag }}-${{ matrix.platform }}
-          path: ${{ runner.temp }}/${{ inputs.tag }}
+          name: ${{ needs.tag_check.outputs.semver }}-${{ matrix.platform }}
+          path: ${{ runner.temp }}/${{ needs.tag_check.outputs.semver }}
           retention-days: 1
     outputs:
-      ecr_repository: ${{ env.ECR_REPOSITORY }}
+      ecr_repository: ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}
   
   # Get built tags
   built_tags:
@@ -179,14 +192,14 @@ jobs:
       - name: Download release tag from GitHub Actions Artifacts
         uses: actions/download-artifact@v4
         with:
-          path: ${{ runner.temp }}/${{ inputs.tag }}
-          pattern: ${{ inputs.tag }}-*
+          path: ${{ runner.temp }}/${{ needs.tag_check.outputs.semver }}
+          pattern: ${{ needs.tag_check.outputs.semver }}-*
           merge-multiple: true
 
       - name: Read tags
         id: read
         run: |
-          DIRECTORY_PATH=${{ runner.temp }}/${{ inputs.tag }}
+          DIRECTORY_PATH=${{ runner.temp }}/${{ needs.tag_check.outputs.semver }}
           FILES=$(ls $DIRECTORY_PATH | tr '\n' ' ')
           echo "files=$FILES" >> $GITHUB_OUTPUT
 
@@ -201,6 +214,6 @@ jobs:
     if: needs.tag_check.outputs.match == 'true'
     with:
       ecr_repository: ${{ needs.build.outputs.ecr_repository }}
-      tag: ${{ inputs.tag }}
+      tag: ${{ needs.tag_check.outputs.semver }}
       additional_tags: ${{ needs.built_tags.outputs.tags }}
       

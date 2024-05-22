@@ -6,15 +6,26 @@ on:
         description: 'Tag name'
         required: true
         type: string
-      regex:
+      tag_check_regex:
         description: 'Regex to check tag'
         required: false
         type: string
         default: '^([0-9]+)\.([0-9]+)\.([0-9]+)(-([0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*))?(\\+([0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*))?$'
+      extract_semver_from_tag:
+        description: 'Extract semver from tag'
+        required: false
+        type: boolean
+        default: false
+      tag_extract_regex:
+        description: 'Regex to extract semver from tag'
+        required: false
+        type: string
+        default: '([^@]+)$'
     outputs:
       match:
         value: ${{ jobs.tag-filter.outputs.match }}
-      
+      semver:
+        value: ${{ jobs.tag-filter.outputs.semver }}
 jobs:
   tag-filter:
     name: Check tag ${{ inputs.tag }}
@@ -22,8 +33,10 @@ jobs:
     timeout-minutes: 1
     outputs:
       match: ${{ steps.tag-check.outputs.match }}
+      semver: ${{ steps.semver.outputs.semver }}
     steps:
-      - id: tag-check
+      - name: Check tag is valid based on regex
+        id: tag-check
         run: |
           if [[ "${{ inputs.tag }}" =~ ${{ inputs.regex }} ]]; then
             echo "match=true" >> $GITHUB_OUTPUT
@@ -34,3 +47,14 @@ jobs:
             echo "Ensure tag maches regex: ${{ inputs.regex }}"
             exit 1
           fi
+      - name: Extract semantic version from tag
+        id: semver
+        if: ${{ steps.tag-check.outputs.match == 'true' }}
+        run: |
+          if [[ "${{ inputs.extract_semver_from_tag }}" == "false" ]]; then
+            semver=${{ inputs.tag }}
+          else
+            semver=$(echo ${{ inputs.tag }} | grep -Eo ${{ inputs.tag_extract_regex }})
+          fi
+          echo "semver=$semver" >> $GITHUB_OUTPUT
+          echo "semver=$semver"
