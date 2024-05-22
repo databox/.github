@@ -6,6 +6,11 @@ on:
         description: 'Tag name'
         required: true
         type: string
+      regex:
+        description: 'Regex to check tag'
+        required: false
+        type: string
+        default: '^([0-9]+)\.([0-9]+)\.([0-9]+)(-([0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*))?(\\+([0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*))?$'
     outputs:
       match:
         value: ${{ jobs.tag-filter.outputs.match }}
@@ -20,11 +25,12 @@ jobs:
     steps:
       - id: tag-check
         run: |
-          if [[ "${{ inputs.tag }}" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)(-([0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*))?(\\+([0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*))?$ ]]; then
+          if [[ "${{ inputs.tag }}" =~ ${{ inputs.regex }} ]]; then
             echo "match=true" >> $GITHUB_OUTPUT
             echo "valid tag for release"
           else
             echo "match=false" >> $GITHUB_OUTPUT
-            echo "${{ inputs.tag }} is invalid tag for release. Tag check regex: ^([0-9]+)\.([0-9]+)\.([0-9]+)(-([0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*))?(\\+([0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*))?$"
+            echo "$Invalid tag!"
+            echo "Ensure tag maches regex: ${{ inputs.regex }}"
             exit 1
           fi
