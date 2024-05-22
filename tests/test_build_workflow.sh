@@ -9,7 +9,7 @@ ref=$1
 gh auth login --with-token $GITHUB_TOKEN
 
 #run semantic versioning test
-gh workflow run "Tag check" \
+gh workflow run "tag-check.yml" \
   -f tag="v1.0.0" \
   -r $ref
 
