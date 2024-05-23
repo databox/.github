@@ -212,7 +212,8 @@ jobs:
             ${{ env.ECR_REGISTRY }}/${{ env.IMAGE }}:${{ env.IMAGE_TAG }}
           docker cp temp_container:${{ inputs.cdn_artifacts_docker_path }} ${{ runner.temp }}/${{ matrix.platform }}
           cd ${{ runner.temp }}/${{ matrix.platform }}
-          ls ${{ runner.temp }}
+          pwd
+          ls
 
       - name: Upload CDN artifacts to S3
         uses: jakejarvis/s3-sync-action@master
