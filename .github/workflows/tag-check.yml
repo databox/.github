@@ -20,7 +20,7 @@ on:
         description: 'Regex to extract semver from tag'
         required: false
         type: string
-        default: '([^@]+)$'
+        default: '([^@]+)$' 
   workflow_call:
     inputs:
       tag:
@@ -59,13 +59,16 @@ jobs:
       - name: Check tag is valid based on regex
         id: tag-check
         run: |
-          if [[ "${{ inputs.tag }}" =~ ${{ inputs.regex }} ]]; then
+          if [[ "${{ inputs.tag }}" =~ ${{ inputs.tag_check_regex }} ]]; then
             echo "match=true" >> $GITHUB_OUTPUT
-            echo "valid tag for release"
+            echo "Tag ${{ inputs.tag }} is valid!"
           else
             echo "match=false" >> $GITHUB_OUTPUT
-            echo "$Invalid tag!"
-            echo "Ensure tag maches regex: ${{ inputs.regex }}"
+            echo "*************** ERROR ***************"
+            echo "Invalid tag!"
+            echo "Ensure tag maches regex"
+            echo "${{ inputs.tag_check_regex }}"
+            echo "*************** ERROR ***************"
             exit 1
           fi
       - name: Extract semantic version from tag
