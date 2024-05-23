@@ -211,6 +211,10 @@ jobs:
           docker run --rm -it -d --name temp_container ${{ inputs.cdn_docker_args }} \
             ${{ env.ECR_REGISTRY }}/${{ env.IMAGE }}:${{ env.IMAGE_TAG }}
           docker cp temp_container:${{ inputs.cdn_artifacts_docker_path }} ${{ runner.temp }}/${{ matrix.platform }}
+          docker stop temp_container
+          docker rm -f temp_container
+          pwd
+          echo "cd"
           cd ${{ runner.temp }}/${{ matrix.platform }}
           pwd
           ls
