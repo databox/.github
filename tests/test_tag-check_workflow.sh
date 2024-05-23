@@ -14,7 +14,7 @@ gh workflow run "tag-check.yml" \
   -f runner="ubuntu-latest" \
   -r $ref
 
-
+#run non semantic versioning test
 gh workflow run "tag-check.yml" \
   -f tag="@databox/react-monorepo-benchmark@0.0.2" \
   -f tag_check_regex="^@.+react-monorepo-benchmark.*@[0-9]+.[0-9]+.[0-9]+(-alpha.[0-9]+)?$" \

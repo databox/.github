@@ -10,6 +10,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      - name: Run test build workflow
+      - name: Tag check
         run: |
-          GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} ./tests/test_build_workflow.sh ${{ github.head_ref }}
+          GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} ./tests/test_tag-check_workflow.sh ${{ github.head_ref }}
