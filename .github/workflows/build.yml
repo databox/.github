@@ -176,7 +176,7 @@ jobs:
           path: ${{ runner.temp }}/${{ needs.tag_check.outputs.semver }}
           retention-days: 1
     outputs:
-      ecr_repository: ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}
+      ecr_repository: ${{ env.ECR_REPOSITORY }}
   
   # Get built tags
   built_tags:

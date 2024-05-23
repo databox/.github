@@ -15,6 +15,8 @@ on:
         required: false
         type: string
         default: ''      
+env:
+  ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
 jobs:
   manifest:
     name: Build and push manifest
@@ -47,13 +49,13 @@ jobs:
             }
 
             const tags = tagsString.split(' ').filter(tag => tag.trim() !== '');
-            const result = tags.map(tag => `  --amend ${{ inputs.ecr_repository }}:${tag}`).join(' \\\n');
+            const result = tags.map(tag => `  --amend ${{ env.ECR_REGISTRY }}/${{ inputs.ecr_repository }}:${tag}`).join(' \\\n');
             
             return result.trim();
 
       - name: Build and push manifest
         run: |
-          IMAGE="${{ inputs.ecr_repository }}:${{ inputs.tag }}"    
+          IMAGE="${{ env.ECR_REGISTRY }}/${{ inputs.ecr_repository }}:${{ inputs.tag }}"    
           docker manifest create $IMAGE \
             ${{ steps.docker-additional-tags.outputs.result }}
           docker manifest push $IMAGE
