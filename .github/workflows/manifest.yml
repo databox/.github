@@ -47,13 +47,13 @@ jobs:
             }
 
             const tags = tagsString.split(' ').filter(tag => tag.trim() !== '');
-            const result = tags.map(tag => `  --amend $IMAGE:${tag}`).join(' \\\n');
+            const result = tags.map(tag => `  --amend ${{ inputs.ecr_repository }}:${tag}`).join(' \\\n');
             
             return result.trim();
 
       - name: Build and push manifest
         run: |
-          IMAGE="${{ inputs.ecr_repository }}"    
-          docker manifest create $IMAGE:${{ inputs.tag }} \
+          IMAGE="${{ inputs.ecr_repository }}:${{ inputs.tag }}"    
+          docker manifest create $IMAGE \
             ${{ steps.docker-additional-tags.outputs.result }}
-          docker manifest push $IMAGE:${{ inputs.tag }}
+          docker manifest push $IMAGE
