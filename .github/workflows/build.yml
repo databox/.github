@@ -209,7 +209,7 @@ jobs:
           mkdir -p ${{ runner.temp }}/${{ matrix.platform }}
           ls ${{ runner.temp }}
           docker run --rm -it -d --name temp_container ${{ inputs.cdn_docker_args }} \
-            ${{ env.IMAGE }}:${{ env.IMAGE_TAG }}
+            ${{ env.ECR_REGISTRY }}/${{ env.IMAGE }}:${{ env.IMAGE_TAG }}
           docker cp temp_container:${{ inputs.cdn_artifacts_docker_path }} ${{ runner.temp }}/${{ matrix.platform }}
           cd ${{ runner.temp }}/${{ matrix.platform }}
           ls ${{ runner.temp }}
