@@ -25,7 +25,7 @@ on:
         description: 'Runner'
         required: false
         type: string
-        default: 'ubuntu-22-04-arm64-1-core-4-ram'
+        default: 'ubnutu-22-04-arm64-1-core-4-ram'
   workflow_call:
     inputs:
       tag:
@@ -51,7 +51,7 @@ on:
           description: 'Runner'
           required: false
           type: string
-          default: 'ubuntu-22-04-arm64-1-core-4-ram'        
+          default: 'ubnutu-22-04-arm64-1-core-4-ram'        
     outputs:
       match:
         value: ${{ jobs.tag-filter.outputs.match }}
