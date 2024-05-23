@@ -1,5 +1,56 @@
 name: Build and push image
 on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag name'
+        required: true
+        type: string
+      dockerfile:
+        description: 'Path to the Dockerfile'
+        required: false
+        type: string
+        default: './Dockerfile'
+      build_args:
+        description: 'Docker build arguments'
+        required: false
+        type: string
+        default: ''
+      artifacts_download:
+        description: 'Should download artifacts?'
+        required: false
+        type: boolean
+        default: false
+      artifacts_download_name:
+          description: 'Artifacts name to download'
+          required: false
+          type: string
+          default: ''
+      artifacts_download_path:
+        description: 'Artifacts path to download'
+        required: false
+        type: string
+        default: ''
+      skip_build:
+        description: 'List of platforms to skip build'
+        required: false
+        type: string
+        default: ''
+      tag_check_regex:
+        description: 'Regex to check tag'
+        required: false
+        type: string
+        default: '^([0-9]+)\.([0-9]+)\.([0-9]+)(-([0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*))?(\\+([0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*))?$'
+      extract_semver_from_tag:
+        description: 'Extract semver from tag'
+        required: false
+        type: boolean
+        default: false
+      tag_extract_regex:
+          description: 'Regex to extract semver from tag'
+          required: false
+          type: string
+          default: '([^@]+)$'
   workflow_call:
     inputs:
       tag:
