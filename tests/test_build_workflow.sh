@@ -19,7 +19,7 @@ gh workflow run "tag-check.yml" \
   -f tag="@databox/react-monorepo-benchmark@0.0.2" \
   -f tag_check_regex="^@.+react-monorepo-benchmark.*@[0-9]+.[0-9]+.[0-9]+(-alpha.[0-9]+)?$" \
   -f extract_semver_from_tag="true" \
-  -f tag_extract_regex="([^@]+)$" \
+  -f tag_extract_regex="'([^@]+)$'" \
   -f runner="ubuntu-latest" \
   -r $ref
 
