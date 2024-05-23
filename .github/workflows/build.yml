@@ -51,6 +51,31 @@ on:
           required: false
           type: string
           default: '([^@]+)$'
+      cdn_artifacts:
+        description: 'CDN'
+        required: false
+        type: boolean
+        default: false
+      cdn_artifacts_docker_path:
+        description: 'CDN assets path'
+        required: false
+        type: string
+        default: ''
+      cdn_docker_args:
+        description: 'Docker arguments for CDN'
+        required: false
+        type: string
+        default: ''
+      cdn_artifacts_s3_path:
+        description: 'CDN assets S3 path'
+        required: false
+        type: string
+        default: 'release-assets'
+      image_suffix:
+        description: 'Image suffix'
+        required: false
+        type: string
+        default: ''
 jobs:
   # Check tag setisfiy semantic versioning
   tag_check:
@@ -77,6 +102,8 @@ jobs:
           - arm64
     env:
       ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
+      IMAGE: ''
+      IMAGE_TAG: ''
     steps:
       - name: Determine if build should be skipped
         id: skip-build
@@ -98,8 +125,8 @@ jobs:
         id: ecr
         if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
         run: |
-          echo "ECR_REPOSITORY=$(echo ${{ github.repository }} | awk '{print tolower($0)}' | sed 's|[^/]*/||; s/_/-/g')" >> $GITHUB_ENV
-          echo "ECR_TAG=${{ needs.tag_check.outputs.semver }}-${{ matrix.platform }}" >> $GITHUB_ENV
+          echo "IMAGE=$(echo ${{ github.repository }} | awk '{print tolower($0)}' | sed 's|[^/]*/||; s/_/-/g')${{ inputs.image_suffix }}" >> $GITHUB_ENV
+          echo "IMAGE_TAG=${{ needs.tag_check.outputs.semver }}-${{ matrix.platform }}" >> $GITHUB_ENV
 
       - name: Configure AWS Credentials
         if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
@@ -157,11 +184,11 @@ jobs:
       - name: Docker build and push ${{ needs.tag_check.outputs.semver }}-${{ matrix.platform }} image
         if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
         run: |
-          TAG=${{ env.ECR_TAG }}
-          IMAGE="${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}"
+          TAG=${{ env.IMAGE_TAG }}
+          IMAGE="${{ env.ECR_REGISTRY }}/${{ env.IMAGE }}"
           docker buildx create --name DLC_builder --use
           docker buildx build ${{ steps.docker-build-args.outputs.result }} -f ${{ inputs.dockerfile }} -t ${IMAGE}:${TAG} --progress plain --push --provenance false .
-      
+
       - name: Save ${{ needs.tag_check.outputs.semver }}-${{ matrix.platform }} tag
         if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
         run: |
@@ -175,11 +202,32 @@ jobs:
           name: ${{ needs.tag_check.outputs.semver }}-${{ matrix.platform }}
           path: ${{ runner.temp }}/${{ needs.tag_check.outputs.semver }}
           retention-days: 1
+
+      - name: Extract CDN artifacts from image
+        if: ${{ !fromJson(steps.skip-build.outputs.skip) }} && ${{ inputs.cdn_artifacts }}
+        run: |
+          TAG=${{ env.IMAGE_TAG }}
+          IMAGE="${{ env.ECR_REGISTRY }}/${{ env.IMAGE }}"
+
+          docker run --rm -it -d --name temp_container ${{ inputs.cdn_docker_args }} ${IMAGE}:${TAG}
+          mkdir -p ${{ runner.temp }}/${{ matrix.platform }}
+          docker cp temp_container:${{ inputs.cdn_artifacts_docker_path }} ${{ runner.temp }}/${{ matrix.platform }}
+
+      - name: Upload CDN artifacts to S3
+        if: ${{ !fromJson(steps.skip-build.outputs.skip) }} && ${{ inputs.cdn_artifacts }}
+        uses: keithweaver/aws-s3-github-action@v1.0.0
+        with:
+          command: cp
+          source: ${{ runner.temp }}/${{ matrix.platform }}
+          destination: ${{ secrets.RELEASE_ARTIFACTS_S3 }}/${{ inputs.cdn_artifacts_s3_path }}/${{ needs.tag_check.outputs.semver }}/${{ matrix.platform }}
+          aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_CDN }}
+          aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY_CDN }}
+          aws_region: ${{ secrets.AWS_REGION_CDN }}
     outputs:
-      ecr_repository: ${{ env.ECR_REPOSITORY }}
+      image: ${{ env.IMAGE }}
   
   # Get built tags
-  built_tags:
+  build_tags:
     name: Get built tags
     runs-on: ubnutu-22-04-arm64-1-core-4-ram
     needs: 
@@ -204,15 +252,15 @@ jobs:
 
   # Build and push manifest
   manifest:
-    uses: databox/.github/.github/workflows/manifest.yml@master
+    uses: databox/.github/.github/workflows/manifest.yml@cdn-support
     secrets: inherit
     needs: 
       - tag_check
       - build
-      - built_tags
+      - build_tags
     if: needs.tag_check.outputs.match == 'true'
     with:
-      ecr_repository: ${{ needs.build.outputs.ecr_repository }}
+      image: ${{ needs.build.outputs.image }}
       tag: ${{ needs.tag_check.outputs.semver }}
-      additional_tags: ${{ needs.built_tags.outputs.tags }}
+      additional_tags: ${{ needs.build_tags.outputs.tags }}
       
