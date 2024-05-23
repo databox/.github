@@ -10,10 +10,16 @@ gh auth login --with-token $GITHUB_TOKEN
 
 #run semantic versioning test
 gh workflow run "tag-check.yml" \
-  -f tag="v1.0.0" \
+  -f tag="1.0.0" \
   -f runner="ubuntu-latest" \
   -r $ref
 
 
-#run non-semantic versioning test
-# echo '{"tag":"@databox/react-monorepo-benchmark@0.0.1", "extract_semver_from_tag":"true"}' | gh workflow run tag-check.yml -r $ref --json
+gh workflow run "tag-check.yml" \
+  -f tag="@databox/react-monorepo-benchmark@0.0.2" \
+  -f tag_check_regex="^@.+react-monorepo-benchmark.*@[0-9]+.[0-9]+.[0-9]+(-alpha.[0-9]+)?$" \
+  -f extract_semver_from_tag="true" \
+  -f tag_extract_regex="([^@]+)$" \    
+  -f runner="ubuntu-latest" \
+  -r $ref
+
