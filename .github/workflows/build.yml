@@ -211,15 +211,17 @@ jobs:
           docker cp temp_container:${{ inputs.cdn_artifacts_docker_path }} ${{ runner.temp }}/${{ matrix.platform }}
 
       - name: Upload CDN artifacts to S3
-        if: ${{ !fromJson(steps.skip-build.outputs.skip) }} && ${{ inputs.cdn_artifacts }}
-        uses: keithweaver/aws-s3-github-action@v1.0.0
+        uses: jakejarvis/s3-sync-action@master
         with:
-          command: cp
-          source: ${{ runner.temp }}/${{ matrix.platform }}
-          destination: ${{ secrets.RELEASE_ARTIFACTS_S3 }}/${{ inputs.cdn_artifacts_s3_path }}/${{ needs.tag_check.outputs.semver }}/${{ matrix.platform }}
-          aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_CDN }}
-          aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY_CDN }}
-          aws_region: ${{ secrets.AWS_REGION_CDN }}
+          args: --follow-symlinks
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_CDN }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_CDN }}
+          AWS_S3_BUCKET: ${{ secrets.RELEASE_ARTIFACTS_S3 }}
+          AWS_REGION: ${{ secrets.AWS_REGION_CDN }}
+          SOURCE_DIR: ${{ runner.temp }}/${{ matrix.platform }}
+          DEST_DIR: '${{ inputs.cdn_artifacts_s3_path }}/${{ needs.tag_check.outputs.semver }}/${{ matrix.platform }}'
+          
     outputs:
       image: ${{ env.IMAGE }}
   
