@@ -205,19 +205,10 @@ jobs:
       - name: Extract CDN artifacts from image
         if: ${{ !fromJson(steps.skip-build.outputs.skip) }} && ${{ inputs.cdn_artifacts }}
         run: |
-          docker image list
-          mkdir -p ${{ runner.temp }}/${{ matrix.platform }}
-          ls ${{ runner.temp }}
+          mkdir -p ./${{ matrix.platform }}
           docker run --rm -it -d --name temp_container ${{ inputs.cdn_docker_args }} \
             ${{ env.ECR_REGISTRY }}/${{ env.IMAGE }}:${{ env.IMAGE_TAG }}
-          docker cp temp_container:${{ inputs.cdn_artifacts_docker_path }} ${{ runner.temp }}/${{ matrix.platform }}
-          docker stop temp_container
-          docker rm -f temp_container
-          pwd
-          echo "cd"
-          cd ${{ runner.temp }}/${{ matrix.platform }}
-          pwd
-          ls
+          docker cp temp_container:${{ inputs.cdn_artifacts_docker_path }} ./${{ matrix.platform }}
 
       - name: Upload CDN artifacts to S3
         uses: jakejarvis/s3-sync-action@master
@@ -228,7 +219,7 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_CDN }}
           AWS_S3_BUCKET: ${{ secrets.RELEASE_ARTIFACTS_S3 }}
           AWS_REGION: ${{ secrets.AWS_REGION_CDN }}
-          SOURCE_DIR: ${{ runner.temp }}/${{ matrix.platform }}
+          SOURCE_DIR: ./${{ matrix.platform }}
           DEST_DIR: '${{ inputs.cdn_artifacts_s3_path }}/${{ needs.tag_check.outputs.semver }}/${{ matrix.platform }}'
           
     outputs:
