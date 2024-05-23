@@ -21,6 +21,11 @@ on:
         required: false
         type: string
         default: '([^@]+)$' 
+      runner: 
+        description: 'Runner'
+        required: false
+        type: string
+        default: 'ubuntu-22-04-arm64-1-core-4-ram'
   workflow_call:
     inputs:
       tag:
@@ -42,6 +47,11 @@ on:
         required: false
         type: string
         default: '([^@]+)$'
+      runner: 
+          description: 'Runner'
+          required: false
+          type: string
+          default: 'ubuntu-22-04-arm64-1-core-4-ram'        
     outputs:
       match:
         value: ${{ jobs.tag-filter.outputs.match }}
@@ -50,7 +60,7 @@ on:
 jobs:
   tag-filter:
     name: Check tag ${{ inputs.tag }}
-    runs-on: ubnutu-22-04-arm64-1-core-4-ram
+    runs-on: ${{ inputs.runner }}
     timeout-minutes: 1
     outputs:
       match: ${{ steps.tag-check.outputs.match }}
