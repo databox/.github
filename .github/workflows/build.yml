@@ -205,6 +205,7 @@ jobs:
       - name: Extract CDN artifacts from image
         if: ${{ !fromJson(steps.skip-build.outputs.skip) }} && ${{ inputs.cdn_artifacts }}
         run: |
+          docker image list
           mkdir -p ${{ runner.temp }}/${{ matrix.platform }}
           ls ${{ runner.temp }}
           docker run --rm -it -d --name temp_container ${{ inputs.cdn_docker_args }} \
