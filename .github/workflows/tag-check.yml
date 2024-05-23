@@ -1,30 +1,94 @@
-name: Build and push image
+name: Tag check
 on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag name'
+        required: true
+        type: string
+      tag_check_regex:
+        description: 'Regex to check tag'
+        required: false
+        type: string
+        default: '^([0-9]+)\.([0-9]+)\.([0-9]+)(-([0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*))?(\\+([0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*))?$'
+      extract_semver_from_tag:
+        description: 'Extract semver from tag'
+        required: false
+        type: boolean
+        default: false
+      tag_extract_regex:
+        description: 'Regex to extract semver from tag'
+        required: false
+        type: string
+        default: '([^@]+)$' 
+      runner: 
+        description: 'Runner'
+        required: false
+        type: string
+        default: 'ubnutu-22-04-arm64-1-core-4-ram'
   workflow_call:
     inputs:
       tag:
         description: 'Tag name'
         required: true
         type: string
+      tag_check_regex:
+        description: 'Regex to check tag'
+        required: false
+        type: string
+        default: '^([0-9]+)\.([0-9]+)\.([0-9]+)(-([0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*))?(\\+([0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*))?$'
+      extract_semver_from_tag:
+        description: 'Extract semver from tag'
+        required: false
+        type: boolean
+        default: false
+      tag_extract_regex:
+        description: 'Regex to extract semver from tag'
+        required: false
+        type: string
+        default: '([^@]+)$'
+      runner: 
+          description: 'Runner'
+          required: false
+          type: string
+          default: 'ubnutu-22-04-arm64-1-core-4-ram'        
     outputs:
       match:
         value: ${{ jobs.tag-filter.outputs.match }}
-      
+      semver:
+        value: ${{ jobs.tag-filter.outputs.semver }}
 jobs:
   tag-filter:
     name: Check tag ${{ inputs.tag }}
-    runs-on: ubnutu-22-04-arm64-1-core-4-ram
+    runs-on: ${{ inputs.runner }}
     timeout-minutes: 1
     outputs:
       match: ${{ steps.tag-check.outputs.match }}
+      semver: ${{ steps.semver.outputs.semver }}
     steps:
-      - id: tag-check
+      - name: Check tag is valid based on regex
+        id: tag-check
         run: |
-          if [[ "${{ inputs.tag }}" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)(-([0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*))?(\\+([0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*))?$ ]]; then
+          if [[ "${{ inputs.tag }}" =~ ${{ inputs.tag_check_regex }} ]]; then
             echo "match=true" >> $GITHUB_OUTPUT
-            echo "valid tag for release"
+            echo "Tag ${{ inputs.tag }} is valid!"
           else
             echo "match=false" >> $GITHUB_OUTPUT
-            echo "${{ inputs.tag }} is invalid tag for release. Tag check regex: ^([0-9]+)\.([0-9]+)\.([0-9]+)(-([0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*))?(\\+([0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*))?$"
+            echo "*************** ERROR ***************"
+            echo "Invalid tag!"
+            echo "Ensure tag maches regex"
+            echo "${{ inputs.tag_check_regex }}"
+            echo "*************** ERROR ***************"
             exit 1
           fi
+      - name: Extract semantic version from tag
+        id: semver
+        if: ${{ steps.tag-check.outputs.match == 'true' }}
+        run: |
+          if [[ "${{ inputs.extract_semver_from_tag }}" == "false" ]]; then
+            semver=${{ inputs.tag }}
+          else
+            semver=$(echo ${{ inputs.tag }} | grep -Eo ${{ inputs.tag_extract_regex }})
+          fi
+          echo "semver=$semver" >> $GITHUB_OUTPUT
+          echo "semver=$semver"
