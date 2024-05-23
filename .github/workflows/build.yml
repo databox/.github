@@ -121,7 +121,7 @@ jobs:
         if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
         uses: actions/checkout@v4
 
-      - name: Prepare ECR Repository name variables
+      - name: Prepare ECR Repository variables
         id: ecr
         if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
         run: |
@@ -181,13 +181,12 @@ jobs:
           path: ${{ inputs.artifacts_download_path }}
           merge-multiple: true
 
-      - name: Docker build and push ${{ needs.tag_check.outputs.semver }}-${{ matrix.platform }} image
+      - name: Docker build and push ${{ env.IMAGE }}:${{ env.IMAGE_TAG }}
         if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
         run: |
-          TAG=${{ env.IMAGE_TAG }}
-          IMAGE="${{ env.ECR_REGISTRY }}/${{ env.IMAGE }}"
           docker buildx create --name DLC_builder --use
-          docker buildx build ${{ steps.docker-build-args.outputs.result }} -f ${{ inputs.dockerfile }} -t ${IMAGE}:${TAG} --progress plain --push --provenance false .
+          docker buildx build ${{ steps.docker-build-args.outputs.result }} -f ${{ inputs.dockerfile }} \
+            -t ${{ env.ECR_REGISTRY }}/${{ env.IMAGE }}:${{ env.IMAGE_TAG }} --progress plain --push --provenance false .
 
       - name: Save ${{ needs.tag_check.outputs.semver }}-${{ matrix.platform }} tag
         if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
@@ -206,11 +205,9 @@ jobs:
       - name: Extract CDN artifacts from image
         if: ${{ !fromJson(steps.skip-build.outputs.skip) }} && ${{ inputs.cdn_artifacts }}
         run: |
-          TAG=${{ env.IMAGE_TAG }}
-          IMAGE="${{ env.ECR_REGISTRY }}/${{ env.IMAGE }}"
-
-          docker run --rm -it -d --name temp_container ${{ inputs.cdn_docker_args }} ${IMAGE}:${TAG}
           mkdir -p ${{ runner.temp }}/${{ matrix.platform }}
+          docker run --rm -it -d --name temp_container ${{ inputs.cdn_docker_args }} \
+            ${{ env.ECR_REGISTRY }}/${{ env.IMAGE }}:${{ env.IMAGE_TAG }}
           docker cp temp_container:${{ inputs.cdn_artifacts_docker_path }} ${{ runner.temp }}/${{ matrix.platform }}
 
       - name: Upload CDN artifacts to S3
