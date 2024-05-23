@@ -13,3 +13,6 @@ jobs:
       - name: Tag check
         run: |
           GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} ./tests/test_tag-check_workflow.sh ${{ github.head_ref }}
+      - name: Build
+        run: |
+          GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} ./tests/test_build_workflow.sh ${{ github.head_ref }}
