@@ -6,6 +6,10 @@ on:
         description: 'Tag name'
         required: true
         type: string
+      image:
+        description: 'Image name'
+        required: false
+        type: string
       dockerfile:
         description: 'Path to the Dockerfile'
         required: false
@@ -121,12 +125,19 @@ jobs:
         if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
         uses: actions/checkout@v4
 
-      - name: Prepare ECR Repository variables
+      - name: ECR image name
         id: ecr
         if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
-        run: |
-          echo "IMAGE=$(echo ${{ github.repository }} | awk '{print tolower($0)}' | sed 's|[^/]*/||; s/_/-/g')${{ inputs.image_suffix }}" >> $GITHUB_ENV
+        run: |  
+          image_name=""
+          if [[ -z "${{ inputs.image }}" ]]; then
+            image_name=$(echo ${{ github.repository }} | awk '{print tolower($0)}' | sed 's|[^/]*/||; s/_/-/g')${{ inputs.image_suffix }}
+          else
+            image_name=$(echo ${{ inputs.image }} | awk '{print tolower($0)}' | sed 's|[^/]*/||; s/_/-/g')${{ inputs.image_suffix }}
+          fi
+          echo "IMAGE=$image_name" >> $GITHUB_ENV
           echo "IMAGE_TAG=${{ needs.tag_check.outputs.semver }}-${{ matrix.platform }}" >> $GITHUB_ENV
+          echo ECR image: $image_name:${{ needs.tag_check.outputs.semver }}-${{ matrix.platform }}
 
       - name: Configure AWS Credentials
         if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
