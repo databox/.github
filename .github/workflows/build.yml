@@ -252,7 +252,7 @@ jobs:
 
   # Build and push manifest
   manifest:
-    uses: databox/.github/.github/workflows/manifest.yml@cdn-support
+    uses: databox/.github/.github/workflows/manifest.yml@master
     secrets: inherit
     needs: 
       - tag_check
