@@ -158,7 +158,8 @@ jobs:
             PACKAGES_READ_TOKEN=${{ secrets.PACKAGES_READ_TOKEN }}
             PACKAGES_READ_USER=${{ secrets.PACKAGES_READ_USER }}
             RSA_PYTHON_MQ_LIB=${{ secrets.RSA_PYTHON_MQ_LIB }}
-            BUILD_VERSION=${{ needs.tag_check.outputs.semver }}`;
+            BUILD_VERSION=${{ needs.tag_check.outputs.semver }}
+            VERSION=${{ needs.tag_check.outputs.semver }}`;
 
             const argsString = `${{ inputs.build_args }}` + defaultArgsString;
 
