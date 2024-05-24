@@ -171,7 +171,7 @@ jobs:
             RSA_PYTHON_MQ_LIB=${{ secrets.RSA_PYTHON_MQ_LIB }}
             BUILD_VERSION=${{ needs.tag_check.outputs.semver }}
             VERSION=${{ needs.tag_check.outputs.semver }}
-            RELEASE_TAG=${{ inputs.tag }}`;
+            RELEASE_TAG=${{ needs.tag_check.outputs.semver }}`;
 
             const argsString = `${{ inputs.build_args }}` + defaultArgsString;
 
