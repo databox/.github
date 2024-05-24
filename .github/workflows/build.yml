@@ -211,6 +211,7 @@ jobs:
           docker cp temp_container:${{ inputs.cdn_artifacts_docker_path }} ./${{ matrix.platform }}
 
       - name: Upload CDN artifacts to S3
+        if: ${{ !fromJson(steps.skip-build.outputs.skip) }} && ${{ inputs.cdn_artifacts }}
         uses: jakejarvis/s3-sync-action@master
         with:
           args: --follow-symlinks
