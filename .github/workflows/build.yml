@@ -170,7 +170,8 @@ jobs:
             PACKAGES_READ_USER=${{ secrets.PACKAGES_READ_USER }}
             RSA_PYTHON_MQ_LIB=${{ secrets.RSA_PYTHON_MQ_LIB }}
             BUILD_VERSION=${{ needs.tag_check.outputs.semver }}
-            VERSION=${{ needs.tag_check.outputs.semver }}`;
+            VERSION=${{ needs.tag_check.outputs.semver }}
+            RELEASE_TAG=${{ inputs.tag }}`;
 
             const argsString = `${{ inputs.build_args }}` + defaultArgsString;
 
