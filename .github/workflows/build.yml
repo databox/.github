@@ -206,7 +206,7 @@ jobs:
           echo "${{ !fromJson(steps.skip-build.outputs.skip) }}"
           echo "${{ inputs.cdn_artifacts }}"
       - name: Extract CDN artifacts from image
-        if: !fromJson(steps.skip-build.outputs.skip) && inputs.cdn_artifacts == true
+        if: !fromJson(steps.skip-build.outputs.skip) && inputs.cdn_artifacts == 'true'
         run: |
           mkdir -p ./${{ matrix.platform }}
           docker run --rm -it -d --name temp_container ${{ inputs.cdn_docker_args }} \
