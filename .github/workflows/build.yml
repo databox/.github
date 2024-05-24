@@ -131,9 +131,9 @@ jobs:
         run: |  
           image_name=""
           if [[ -z "${{ inputs.image }}" ]]; then
-            echo "image_name=$(echo ${{ github.repository }} | awk '{print tolower($0)}' | sed 's|[^/]*/||; s/_/-/g')${{ inputs.image_suffix }}"
+            image_name=$(echo ${{ github.repository }} | awk '{print tolower($0)}' | sed 's|[^/]*/||; s/_/-/g')${{ inputs.image_suffix }}
           else
-            echo "image_name=$(echo ${{ inputs.image }} | awk '{print tolower($0)}' | sed 's|[^/]*/||; s/_/-/g')${{ inputs.image_suffix }}"
+            image_name=$(echo ${{ inputs.image }} | awk '{print tolower($0)}' | sed 's|[^/]*/||; s/_/-/g')${{ inputs.image_suffix }}
           fi
           echo "IMAGE=$image_name" >> $GITHUB_ENV
           echo "IMAGE_TAG=${{ needs.tag_check.outputs.semver }}-${{ matrix.platform }}" >> $GITHUB_ENV
