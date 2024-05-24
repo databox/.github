@@ -174,7 +174,7 @@ jobs:
             return result;
 
       - name: Download artifacts
-        if: ${{ inputs.artifacts_download }} && ${{ !fromJson(steps.skip-build.outputs.skip) }}
+        if: ${{ (inputs.artifacts_download == true)  &&  (fromJson(steps.skip-build.outputs.skip) == false) }}
         uses: actions/download-artifact@v4
         with:
           name: ${{ inputs.artifacts_download_name }}
@@ -202,11 +202,8 @@ jobs:
           path: ${{ runner.temp }}/${{ needs.tag_check.outputs.semver }}
           retention-days: 1
 
-      - run: |
-          echo "${{ !fromJson(steps.skip-build.outputs.skip) }}"
-          echo "${{ inputs.cdn_artifacts }}"
       - name: Extract CDN artifacts from image
-        if: ${{ !fromJson(steps.skip-build.outputs.skip) }} && ${{ inputs.cdn_artifacts }} == 'true'
+        if: ${{ (fromJson(steps.skip-build.outputs.skip) == false) && (inputs.cdn_artifacts == true) }} 
         run: |
           mkdir -p ./${{ matrix.platform }}
           docker run --rm -it -d --name temp_container ${{ inputs.cdn_docker_args }} \
@@ -214,7 +211,7 @@ jobs:
           docker cp temp_container:${{ inputs.cdn_artifacts_docker_path }} ./${{ matrix.platform }}
 
       - name: Upload CDN artifacts to S3
-        if: ${{ !fromJson(steps.skip-build.outputs.skip) }} && ${{ inputs.cdn_artifacts }}
+        if: ${{ (fromJson(steps.skip-build.outputs.skip) == false) && (inputs.cdn_artifacts == true) }} 
         uses: jakejarvis/s3-sync-action@master
         with:
           args: --follow-symlinks
