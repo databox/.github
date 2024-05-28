@@ -94,7 +94,7 @@ jobs:
   # Build image for each platform
   build:
     name: Build ${{ needs.tag_check.outputs.semver }}-${{ matrix.platform }}
-    runs-on: ubnutu-22-04-${{ matrix.platform }}-1-core-4-ram
+    runs-on: databox-${{ matrix.platform }}
     needs:
       - tag_check
     if: needs.tag_check.outputs.match == 'true'
@@ -242,7 +242,7 @@ jobs:
   # Get built tags
   build_tags:
     name: Get built tags
-    runs-on: ubnutu-22-04-arm64-1-core-4-ram
+    runs-on: databox-arm64
     needs: 
       - tag_check
       - build
