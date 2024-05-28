@@ -20,7 +20,7 @@ env:
 jobs:
   manifest:
     name: Build and push manifest
-    runs-on: ubnutu-22-04-arm64-1-core-4-ram
+    runs-on: databox-arm64
     timeout-minutes: 1
     steps:
       - name: Configure AWS Credentials

@@ -46,12 +46,7 @@ on:
         description: 'Regex to extract semver from tag'
         required: false
         type: string
-        default: '([^@]+)$'
-      runner: 
-          description: 'Runner'
-          required: false
-          type: string
-          default: 'ubnutu-22-04-arm64-1-core-4-ram'        
+        default: '([^@]+)$'    
     outputs:
       match:
         value: ${{ jobs.tag-filter.outputs.match }}
@@ -60,7 +55,7 @@ on:
 jobs:
   tag-filter:
     name: Check tag ${{ inputs.tag }}
-    runs-on: ${{ inputs.runner }}
+    runs-on: databox-arm64
     timeout-minutes: 1
     outputs:
       match: ${{ steps.tag-check.outputs.match }}
