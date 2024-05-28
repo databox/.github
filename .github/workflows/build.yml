@@ -147,11 +147,6 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      # - name: Login to Amazon ECR
-      #   if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
-      #   id: login-ecr
-      #   uses: aws-actions/amazon-ecr-login@v2
-
       - name: Set up docker buildx
         if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
         uses: docker/setup-buildx-action@v3
