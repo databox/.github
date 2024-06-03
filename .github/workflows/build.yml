@@ -150,6 +150,8 @@ jobs:
       - name: Set up docker buildx
         if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
         uses: docker/setup-buildx-action@v3
+        with:
+          buildkitd-flags: --debug
 
       - name: Generate docker build args
         if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
@@ -166,7 +168,8 @@ jobs:
             RSA_PYTHON_MQ_LIB=${{ secrets.RSA_PYTHON_MQ_LIB }}
             BUILD_VERSION=${{ needs.tag_check.outputs.semver }}
             VERSION=${{ needs.tag_check.outputs.semver }}
-            RELEASE_TAG=${{ needs.tag_check.outputs.semver }}`;
+            RELEASE_TAG=${{ needs.tag_check.outputs.semver }}
+            BUILDKIT_INLINE_CACHE=1`;
 
             const argsString = `${{ inputs.build_args }}` + defaultArgsString;
 
@@ -189,12 +192,64 @@ jobs:
           path: ${{ inputs.artifacts_download_path }}
           merge-multiple: true
 
+      - name: Debug
+        run: |
+          echo ${{ secrets.AWS_REGION }} >> ${{ runner.temp }}/secrets
+          echo ${{ secrets.AWS_ACCESS_KEY }} >> ${{ runner.temp }}/secrets
+          echo ${{ secrets.AWS_SECRET_ACCESS_KEY }} >> ${{ runner.temp }}/secrets
+
+          echo ${{ inputs.dockerfile }}  >> ${{ runner.temp }}/docker
+          echo ${{ steps.docker-build-args.outputs.result }} >> ${{ runner.temp }}/docker
+          echo ${{ env.ECR_REGISTRY }}/${{ env.IMAGE }}:${{ env.IMAGE_TAG }} >> ${{ runner.temp }}/docker
+
+          #sleep 3600
+          
       - name: Docker build and push ${{ env.IMAGE }}:${{ env.IMAGE_TAG }}
         if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
+        env:
+          DOCKER_BUILDKIT: 1
         run: |
-          docker buildx create --name DLC_builder --use
-          docker buildx build ${{ steps.docker-build-args.outputs.result }} -f ${{ inputs.dockerfile }} \
-            -t ${{ env.ECR_REGISTRY }}/${{ env.IMAGE }}:${{ env.IMAGE_TAG }} --progress plain --push --provenance false .
+          docker buildx create --name DLC_builder --use --driver=docker-container
+          docker buildx build \
+            ${{ steps.docker-build-args.outputs.result }} \
+            -f ${{ inputs.dockerfile }} \
+            -t ${{ env.ECR_REGISTRY }}/${{ env.IMAGE }}:${{ env.IMAGE_TAG }} \
+            --cache-from type=s3,bucket=databox-buildx-cache,blobs_prefix=${{ env.IMAGE }}/${{ matrix.platform }}/blob/,manifests_prefix=${{ env.IMAGE }}/${{ matrix.platform }}/manifest/,region=${{ secrets.AWS_REGION }},access_key_id=${{ secrets.AWS_ACCESS_KEY }},secret_access_key=${{ secrets.AWS_SECRET_ACCESS_KEY }} \
+            --cache-to type=s3,mode=max,bucket=databox-buildx-cache,blobs_prefix=${{ env.IMAGE }}/${{ matrix.platform }}/blob/,manifests_prefix=${{ env.IMAGE }}/${{ matrix.platform }}/manifest/,region=${{ secrets.AWS_REGION }},access_key_id=${{ secrets.AWS_ACCESS_KEY }},secret_access_key=${{ secrets.AWS_SECRET_ACCESS_KEY }} \
+            --progress plain \
+            --push \
+            --provenance false .
+
+      # - name: Adding required env vars for caching Docker build
+      #   uses: actions/github-script@v7
+      #   env:
+      #     github-token: ${{ secrets.GITHUB_TOKEN }}
+      #   with:
+      #     script: |
+      #       core.exportVariable('ACTIONS_CACHE_URL', process.env['ACTIONS_CACHE_URL'])
+      #       core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env['ACTIONS_RUNTIME_TOKEN'])
+      #       core.exportVariable('ACTIONS_RUNTIME_URL', process.env['ACTIONS_RUNTIME_URL'])
+            
+      # - name: Echo required env vars
+      #   shell: bash
+      #   run: |
+      #     echo "ACTIONS_CACHE_URL: $ACTIONS_CACHE_URL"
+      #     echo "ACTIONS_RUNTIME_TOKEN: $ACTIONS_RUNTIME_TOKEN"     
+      #     echo "ACTIONS_RUNTIME_URL: $ACTIONS_RUNTIME_URL"                  
+
+      # - name: Docker build and push ${{ env.IMAGE }}:${{ env.IMAGE_TAG }}
+      #   if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
+      #   run: |
+      #     docker buildx create --name DLC_builder --use --driver=docker-container
+      #     docker buildx build \
+      #       ${{ steps.docker-build-args.outputs.result }} \
+      #       -f ${{ inputs.dockerfile }} \
+      #       -t ${{ env.ECR_REGISTRY }}/${{ env.IMAGE }}:${{ env.IMAGE_TAG }} \
+      #       --cache-from type=gha \
+      #       --cache-to type=gha,mode=max \
+      #       --progress plain \
+      #       --push \
+      #       --provenance false .
 
       - name: Save ${{ needs.tag_check.outputs.semver }}-${{ matrix.platform }} tag
         if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
