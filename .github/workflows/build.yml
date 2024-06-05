@@ -203,6 +203,7 @@ jobs:
           echo ${{ env.ECR_REGISTRY }}/${{ env.IMAGE }}:${{ env.IMAGE_TAG }} >> ${{ runner.temp }}/docker
 
           #sleep 3600
+          ls -la
           
       - name: Docker build and push ${{ env.IMAGE }}:${{ env.IMAGE_TAG }}
         if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
