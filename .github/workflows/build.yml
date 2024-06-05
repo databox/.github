@@ -166,7 +166,8 @@ jobs:
             RSA_PYTHON_MQ_LIB=${{ secrets.RSA_PYTHON_MQ_LIB }}
             BUILD_VERSION=${{ needs.tag_check.outputs.semver }}
             VERSION=${{ needs.tag_check.outputs.semver }}
-            RELEASE_TAG=${{ needs.tag_check.outputs.semver }}`;
+            RELEASE_TAG=${{ needs.tag_check.outputs.semver }}
+            NODE_AUTH_TOKEN=${{ secrets.PACKAGES_READ_TOKEN }}`;
 
             const argsString = `${{ inputs.build_args }}` + defaultArgsString;
 
