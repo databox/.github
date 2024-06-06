@@ -166,8 +166,7 @@ jobs:
             RSA_PYTHON_MQ_LIB=${{ secrets.RSA_PYTHON_MQ_LIB }}
             BUILD_VERSION=${{ needs.tag_check.outputs.semver }}
             VERSION=${{ needs.tag_check.outputs.semver }}
-            RELEASE_TAG=${{ needs.tag_check.outputs.semver }}
-            BUILDKIT_INLINE_CACHE=1`;
+            RELEASE_TAG=${{ needs.tag_check.outputs.semver }}`;
 
             const argsString = `${{ inputs.build_args }}` + defaultArgsString;
             const args = argsString.split('\n').filter(arg => arg.trim() !== '');
@@ -185,8 +184,6 @@ jobs:
           
       - name: Docker build and push ${{ env.IMAGE }}:${{ env.IMAGE_TAG }}
         if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
-        env:
-          DOCKER_BUILDKIT: 1
         run: |
           docker buildx create --name DLC_builder --use --driver=docker-container
           docker buildx build \
