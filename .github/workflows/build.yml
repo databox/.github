@@ -193,8 +193,8 @@ jobs:
             ${{ steps.docker-build-args.outputs.result }} \
             -f ${{ inputs.dockerfile }} \
             -t ${{ env.ECR_REGISTRY }}/${{ env.IMAGE }}:${{ env.IMAGE_TAG }} \
-            --cache-from type=s3,name=${{ env.IMAGE }},bucket=databox-buildx-cache,blobs_prefix=${{ env.IMAGE }}/${{ matrix.platform }}/blob/,manifests_prefix=${{ env.IMAGE }}/${{ matrix.platform }}/manifest/,region=${{ secrets.AWS_REGION }},access_key_id=${{ secrets.AWS_ACCESS_KEY }},secret_access_key=${{ secrets.AWS_SECRET_ACCESS_KEY }} \
-            --cache-to type=s3,mode=max,name=${{ env.IMAGE }},bucket=databox-buildx-cache,blobs_prefix=${{ env.IMAGE }}/${{ matrix.platform }}/blob/,manifests_prefix=${{ env.IMAGE }}/${{ matrix.platform }}/manifest/,region=${{ secrets.AWS_REGION }},access_key_id=${{ secrets.AWS_ACCESS_KEY }},secret_access_key=${{ secrets.AWS_SECRET_ACCESS_KEY }} \
+            --cache-from type=s3,name=${{ env.IMAGE }},bucket=${{ secrets.DOCKER_BUILD_CACHE_S3 }},blobs_prefix=${{ env.IMAGE }}/${{ matrix.platform }}/blob/,manifests_prefix=${{ env.IMAGE }}/${{ matrix.platform }}/manifest/,region=${{ secrets.AWS_REGION }},access_key_id=${{ secrets.AWS_ACCESS_KEY }},secret_access_key=${{ secrets.AWS_SECRET_ACCESS_KEY }} \
+            --cache-to type=s3,mode=max,name=${{ env.IMAGE }},bucket=${{ secrets.DOCKER_BUILD_CACHE_S3 }},blobs_prefix=${{ env.IMAGE }}/${{ matrix.platform }}/blob/,manifests_prefix=${{ env.IMAGE }}/${{ matrix.platform }}/manifest/,region=${{ secrets.AWS_REGION }},access_key_id=${{ secrets.AWS_ACCESS_KEY }},secret_access_key=${{ secrets.AWS_SECRET_ACCESS_KEY }} \
             --progress plain \
             --push \
             --provenance false .
