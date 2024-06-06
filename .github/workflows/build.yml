@@ -94,7 +94,7 @@ jobs:
   # Build image for each platform
   build:
     name: Build ${{ needs.tag_check.outputs.semver }}-${{ matrix.platform }}
-    runs-on: databox-test-${{ matrix.platform }}
+    runs-on: databox-${{ matrix.platform }}
     needs:
       - tag_check
     if: needs.tag_check.outputs.match == 'true'
@@ -150,8 +150,6 @@ jobs:
       - name: Set up docker buildx
         if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
         uses: docker/setup-buildx-action@v3
-        with:
-          buildkitd-flags: '--debug'
 
       - name: Generate docker build args
         if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
@@ -172,13 +170,6 @@ jobs:
             BUILDKIT_INLINE_CACHE=1`;
 
             const argsString = `${{ inputs.build_args }}` + defaultArgsString;
-
-            /*
-            if (!argsString) {
-              return ' ';
-            }
-            */
-            
             const args = argsString.split('\n').filter(arg => arg.trim() !== '');
             const result = args.map(arg => `--build-arg ${arg.replace(':', '=')}`).join(' ');
             
@@ -191,19 +182,6 @@ jobs:
           name: ${{ inputs.artifacts_download_name }}
           path: ${{ inputs.artifacts_download_path }}
           merge-multiple: true
-
-      - name: Debug
-        run: |
-          echo ${{ secrets.AWS_REGION }} >> ${{ runner.temp }}/secrets
-          echo ${{ secrets.AWS_ACCESS_KEY }} >> ${{ runner.temp }}/secrets
-          echo ${{ secrets.AWS_SECRET_ACCESS_KEY }} >> ${{ runner.temp }}/secrets
-
-          echo ${{ inputs.dockerfile }}  >> ${{ runner.temp }}/docker
-          echo ${{ steps.docker-build-args.outputs.result }} >> ${{ runner.temp }}/docker
-          echo ${{ env.ECR_REGISTRY }}/${{ env.IMAGE }}:${{ env.IMAGE_TAG }} >> ${{ runner.temp }}/docker
-
-          #sleep 3600
-          ls -la
           
       - name: Docker build and push ${{ env.IMAGE }}:${{ env.IMAGE_TAG }}
         if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
@@ -220,37 +198,6 @@ jobs:
             --progress plain \
             --push \
             --provenance false .
-
-      # - name: Adding required env vars for caching Docker build
-      #   uses: actions/github-script@v7
-      #   env:
-      #     github-token: ${{ secrets.GITHUB_TOKEN }}
-      #   with:
-      #     script: |
-      #       core.exportVariable('ACTIONS_CACHE_URL', process.env['ACTIONS_CACHE_URL'])
-      #       core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env['ACTIONS_RUNTIME_TOKEN'])
-      #       core.exportVariable('ACTIONS_RUNTIME_URL', process.env['ACTIONS_RUNTIME_URL'])
-            
-      # - name: Echo required env vars
-      #   shell: bash
-      #   run: |
-      #     echo "ACTIONS_CACHE_URL: $ACTIONS_CACHE_URL"
-      #     echo "ACTIONS_RUNTIME_TOKEN: $ACTIONS_RUNTIME_TOKEN"     
-      #     echo "ACTIONS_RUNTIME_URL: $ACTIONS_RUNTIME_URL"                  
-
-      # - name: Docker build and push ${{ env.IMAGE }}:${{ env.IMAGE_TAG }}
-      #   if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
-      #   run: |
-      #     docker buildx create --name DLC_builder --use --driver=docker-container
-      #     docker buildx build \
-      #       ${{ steps.docker-build-args.outputs.result }} \
-      #       -f ${{ inputs.dockerfile }} \
-      #       -t ${{ env.ECR_REGISTRY }}/${{ env.IMAGE }}:${{ env.IMAGE_TAG }} \
-      #       --cache-from type=gha \
-      #       --cache-to type=gha,mode=max \
-      #       --progress plain \
-      #       --push \
-      #       --provenance false .
 
       - name: Save ${{ needs.tag_check.outputs.semver }}-${{ matrix.platform }} tag
         if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
