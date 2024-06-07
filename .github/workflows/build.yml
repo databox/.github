@@ -167,7 +167,10 @@ jobs:
             BUILD_VERSION=${{ needs.tag_check.outputs.semver }}
             VERSION=${{ needs.tag_check.outputs.semver }}
             RELEASE_TAG=${{ needs.tag_check.outputs.semver }}
-            NODE_AUTH_TOKEN=${{ secrets.PACKAGES_READ_TOKEN }}`;
+            NODE_AUTH_TOKEN=${{ secrets.PACKAGES_READ_TOKEN }}
+            PACKAGIST_USERNAME=${{ secrets.PACKAGIST_USERNAME }}
+            PACKAGIST_PASSWORD=${{ secrets.PACKAGIST_PASSWORD }}
+            GITHUB_API_TOKEN=${{ secrets.PAT_APPROVE_PR }}`;
 
             const argsString = `${{ inputs.build_args }}` + defaultArgsString;
             const args = argsString.split('\n').filter(arg => arg.trim() !== '');
