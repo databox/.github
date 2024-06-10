@@ -222,18 +222,12 @@ jobs:
             ${{ env.ECR_REGISTRY }}/${{ env.IMAGE }}:${{ env.IMAGE_TAG }}
           docker cp temp_container:${{ inputs.cdn_artifacts_docker_path }} ./${{ matrix.platform }}
 
-      # - name: Upload CDN artifacts to S3
-      #   if: ${{ (fromJson(steps.skip-build.outputs.skip) == false) && (inputs.cdn_artifacts == true) }} 
-      #   uses: jakejarvis/s3-sync-action@master
-      #   with:
-      #     args: --follow-symlinks
-      #   env:
-      #     AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_CDN }}
-      #     AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_CDN }}
-      #     AWS_S3_BUCKET: ${{ secrets.RELEASE_ARTIFACTS_S3 }}
-      #     AWS_REGION: ${{ secrets.AWS_REGION_CDN }}
-      #     SOURCE_DIR: ./${{ matrix.platform }}
-      #     DEST_DIR: '${{ inputs.cdn_artifacts_s3_path }}/${{ needs.tag_check.outputs.semver }}/${{ matrix.platform }}'
+      - name: Upload CDN artifacts to S3
+        if: ${{ (fromJson(steps.skip-build.outputs.skip) == false) && (inputs.cdn_artifacts == true) }} 
+        run: |
+          aws s3 cp ./${{ matrix.platform }} \
+          s3://${{ secrets.RELEASE_ARTIFACTS_S3 }}/${{ inputs.cdn_artifacts_s3_path }}/${{ needs.tag_check.outputs.semver }}/${{ matrix.platform }} \
+          --recursive --follow-symlinks
           
     outputs:
       image: ${{ env.IMAGE }}
