@@ -166,16 +166,13 @@ jobs:
             RSA_PYTHON_MQ_LIB=${{ secrets.RSA_PYTHON_MQ_LIB }}
             BUILD_VERSION=${{ needs.tag_check.outputs.semver }}
             VERSION=${{ needs.tag_check.outputs.semver }}
-            RELEASE_TAG=${{ needs.tag_check.outputs.semver }}`;
+            RELEASE_TAG=${{ needs.tag_check.outputs.semver }}
+            NODE_AUTH_TOKEN=${{ secrets.PACKAGES_READ_TOKEN }}
+            PACKAGIST_USERNAME=${{ secrets.PACKAGIST_USERNAME }}
+            PACKAGIST_PASSWORD=${{ secrets.PACKAGIST_PASSWORD }}
+            GITHUB_API_TOKEN=${{ secrets.PAT_APPROVE_PR }}`;
 
             const argsString = `${{ inputs.build_args }}` + defaultArgsString;
-
-            /*
-            if (!argsString) {
-              return ' ';
-            }
-            */
-            
             const args = argsString.split('\n').filter(arg => arg.trim() !== '');
             const result = args.map(arg => `--build-arg ${arg.replace(':', '=')}`).join(' ');
             
@@ -188,13 +185,20 @@ jobs:
           name: ${{ inputs.artifacts_download_name }}
           path: ${{ inputs.artifacts_download_path }}
           merge-multiple: true
-
+          
       - name: Docker build and push ${{ env.IMAGE }}:${{ env.IMAGE_TAG }}
         if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
         run: |
-          docker buildx create --name DLC_builder --use
-          docker buildx build ${{ steps.docker-build-args.outputs.result }} -f ${{ inputs.dockerfile }} \
-            -t ${{ env.ECR_REGISTRY }}/${{ env.IMAGE }}:${{ env.IMAGE_TAG }} --progress plain --push --provenance false .
+          docker buildx create --name DLC_builder --use --driver=docker-container
+          docker buildx build \
+            ${{ steps.docker-build-args.outputs.result }} \
+            -f ${{ inputs.dockerfile }} \
+            -t ${{ env.ECR_REGISTRY }}/${{ env.IMAGE }}:${{ env.IMAGE_TAG }} \
+            --cache-from type=s3,name=${{ env.IMAGE }},bucket=${{ secrets.DOCKER_BUILD_CACHE_S3 }},blobs_prefix=${{ env.IMAGE }}/${{ matrix.platform }}/blob/,manifests_prefix=${{ env.IMAGE }}/${{ matrix.platform }}/manifest/,region=${{ secrets.AWS_REGION }},access_key_id=${{ secrets.AWS_ACCESS_KEY }},secret_access_key=${{ secrets.AWS_SECRET_ACCESS_KEY }} \
+            --cache-to type=s3,mode=max,name=${{ env.IMAGE }},bucket=${{ secrets.DOCKER_BUILD_CACHE_S3 }},blobs_prefix=${{ env.IMAGE }}/${{ matrix.platform }}/blob/,manifests_prefix=${{ env.IMAGE }}/${{ matrix.platform }}/manifest/,region=${{ secrets.AWS_REGION }},access_key_id=${{ secrets.AWS_ACCESS_KEY }},secret_access_key=${{ secrets.AWS_SECRET_ACCESS_KEY }} \
+            --progress plain \
+            --push \
+            --provenance false .
 
       - name: Save ${{ needs.tag_check.outputs.semver }}-${{ matrix.platform }} tag
         if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
