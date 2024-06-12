@@ -80,6 +80,11 @@ on:
         required: false
         type: string
         default: ''
+      start_npm:
+        description: 'Start npm'
+        required: false
+        type: boolean
+        default: false
 jobs:
   # Check tag setisfiy semantic versioning
   tag_check:
@@ -190,6 +195,13 @@ jobs:
       - name: Docker build and push ${{ env.IMAGE }}:${{ env.IMAGE_TAG }}
         if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
         run: |
+        
+          if [[ "${{ inputs.start_npm }}" == true ]]; then
+            npm set @databox:registry=https://npm.pkg.github.com/databox
+            npm set //npm.pkg.github.com/:_authToken=${{ secrets.PACKAGES_READ_TOKEN }}
+            npm start
+          fi
+          
           docker buildx create --name DLC_builder --use --driver=docker-container
           docker buildx build \
             ${{ steps.docker-build-args.outputs.result }} \
