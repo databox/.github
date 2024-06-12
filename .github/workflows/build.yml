@@ -191,17 +191,17 @@ jobs:
           name: ${{ inputs.artifacts_download_name }}
           path: ${{ inputs.artifacts_download_path }}
           merge-multiple: true
-          
+      
+      - name: Start npm
+        if: ${{ (fromJson(steps.skip-build.outputs.skip) == false) && (inputs.start_npm == true) }} 
+        run: |
+          npm set @databox:registry=https://npm.pkg.github.com/databox
+          npm set //npm.pkg.github.com/:_authToken=${{ secrets.PACKAGES_READ_TOKEN }}
+          npm start
+
       - name: Docker build and push ${{ env.IMAGE }}:${{ env.IMAGE_TAG }}
         if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
         run: |
-        
-          if [[ "${{ inputs.start_npm }}" == true ]]; then
-            npm set @databox:registry=https://npm.pkg.github.com/databox
-            npm set //npm.pkg.github.com/:_authToken=${{ secrets.PACKAGES_READ_TOKEN }}
-            npm start
-          fi
-          
           docker buildx create --name DLC_builder --use --driver=docker-container
           docker buildx build \
             ${{ steps.docker-build-args.outputs.result }} \
