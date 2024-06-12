@@ -80,6 +80,11 @@ on:
         required: false
         type: string
         default: ''
+      start_npm:
+        description: 'Start npm'
+        required: false
+        type: boolean
+        default: false
 jobs:
   # Check tag setisfiy semantic versioning
   tag_check:
@@ -186,7 +191,14 @@ jobs:
           name: ${{ inputs.artifacts_download_name }}
           path: ${{ inputs.artifacts_download_path }}
           merge-multiple: true
-          
+      
+      - name: Start npm
+        if: ${{ (fromJson(steps.skip-build.outputs.skip) == false) && (inputs.start_npm == true) }} 
+        run: |
+          npm set @databox:registry=https://npm.pkg.github.com/databox
+          npm set //npm.pkg.github.com/:_authToken=${{ secrets.PACKAGES_READ_TOKEN }}
+          npm start
+
       - name: Docker build and push ${{ env.IMAGE }}:${{ env.IMAGE_TAG }}
         if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
         run: |
