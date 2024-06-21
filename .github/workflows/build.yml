@@ -143,6 +143,11 @@ jobs:
           echo "IMAGE=$image_name" >> $GITHUB_ENV
           echo "IMAGE_TAG=${{ needs.tag_check.outputs.semver }}-${{ matrix.platform }}" >> $GITHUB_ENV
           echo ECR image: $image_name:${{ needs.tag_check.outputs.semver }}-${{ matrix.platform }}
+      
+      - name: Create ECR repository if not exists
+        if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
+        run: |
+          aws ecr describe-repositories --repository-names ${{ env.IMAGE }} || aws ecr create-repository --image-scanning-configuration scanOnPush=true --repository-name ${{ env.IMAGE }} 
 
       - name: Configure AWS Credentials
         if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
