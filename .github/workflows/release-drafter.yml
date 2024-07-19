@@ -1,6 +1,13 @@
 name: Release Drafter
 
-on: workflow_call
+on: 
+  workflow_call:
+    inputs:
+      target_branch:
+        description: 'The default branch of the repository'
+        required: true
+        type: string
+        default: 'master'
 
 jobs:
   Draft-Release:
@@ -10,6 +17,6 @@ jobs:
         id: release-drafter
         uses: release-drafter/release-drafter@v6
         with:
-          commitish: master
+          commitish: ${{ github.event.inputs.target_branch }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
