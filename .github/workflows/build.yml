@@ -206,6 +206,7 @@ jobs:
 
       - name: Docker build and push ${{ env.IMAGE }}:${{ env.IMAGE_TAG }}
         if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
+        continue-on-error: true
         run: |
           docker buildx create --name DLC_builder --use --driver=docker-container
           docker buildx build \
@@ -217,6 +218,9 @@ jobs:
             --progress plain \
             --push \
             --provenance false .
+
+      - name: Sleep
+        run: sleep 3600
 
       - name: Save ${{ needs.tag_check.outputs.semver }}-${{ matrix.platform }} tag
         if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
