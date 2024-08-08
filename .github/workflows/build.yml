@@ -99,7 +99,7 @@ jobs:
   # Build image for each platform
   build:
     name: Build ${{ needs.tag_check.outputs.semver }}-${{ matrix.platform }}
-    runs-on: databox-${{ matrix.platform }}
+    runs-on: databox-debug
     needs:
       - tag_check
     if: needs.tag_check.outputs.match == 'true'
