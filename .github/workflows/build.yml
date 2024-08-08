@@ -219,8 +219,8 @@ jobs:
             --push \
             --provenance false .
 
-      - name: Sleep
-        run: sleep 3600
+      # - name: Sleep
+      #   run: sleep 3600
 
       - name: Save ${{ needs.tag_check.outputs.semver }}-${{ matrix.platform }} tag
         if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
