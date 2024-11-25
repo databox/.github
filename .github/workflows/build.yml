@@ -160,10 +160,6 @@ jobs:
       - name: Set up docker buildx
         if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
         uses: docker/setup-buildx-action@v3
-        with:
-          buildkitd-config-inline: |
-            [registry."docker.io"]
-              mirrors = ["databox-gg9e91kd.dockermirror.stablebuild.com"]
 
       - name: Generate docker build args
         if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
