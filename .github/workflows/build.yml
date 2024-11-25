@@ -123,7 +123,7 @@ jobs:
             echo "skip=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Build version ${{ needs.tag_check.outputs.semver }} for platform ${{ matrix.platform }} 
+      - name: Build version ${{ needs.tag_check.outputs.semver }} for platform ${{ matrix.platform }}
         run: echo "skip=${{ steps.skip-build.outputs.skip }}; dont skip=${{ !fromJson(steps.skip-build.outputs.skip) }}"
 
       - name: Checkout repository
@@ -133,7 +133,7 @@ jobs:
       - name: ECR image name
         id: ecr
         if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
-        run: |  
+        run: |
           image_name=""
           if [[ -z "${{ inputs.image }}" ]]; then
             image_name=$(echo ${{ github.repository }} | awk '{print tolower($0)}' | sed 's|[^/]*/||; s/_/-/g')${{ inputs.image_suffix }}
@@ -143,11 +143,11 @@ jobs:
           echo "IMAGE=$image_name" >> $GITHUB_ENV
           echo "IMAGE_TAG=${{ needs.tag_check.outputs.semver }}-${{ matrix.platform }}" >> $GITHUB_ENV
           echo ECR image: $image_name:${{ needs.tag_check.outputs.semver }}-${{ matrix.platform }}
-      
+
       - name: Create ECR repository if not exists
         if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
         run: |
-          aws ecr describe-repositories --repository-names ${{ env.IMAGE }} || aws ecr create-repository --image-scanning-configuration scanOnPush=true --repository-name ${{ env.IMAGE }} 
+          aws ecr describe-repositories --repository-names ${{ env.IMAGE }} || aws ecr create-repository --image-scanning-configuration scanOnPush=true --repository-name ${{ env.IMAGE }}
 
       - name: Configure AWS Credentials
         if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
@@ -160,6 +160,10 @@ jobs:
       - name: Set up docker buildx
         if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
         uses: docker/setup-buildx-action@v3
+        with:
+          buildkitd-config-inline: |
+            [registry."docker.io"]
+              mirrors = ["databox-gg9e91kd.dockermirror.stablebuild.com"]
 
       - name: Generate docker build args
         if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
@@ -186,7 +190,7 @@ jobs:
             const argsString = `${{ inputs.build_args }}` + defaultArgsString;
             const args = argsString.split('\n').filter(arg => arg.trim() !== '');
             const result = args.map(arg => `--build-arg ${arg.replace(':', '=')}`).join(' ');
-            
+
             return result;
 
       - name: Download artifacts
@@ -196,9 +200,9 @@ jobs:
           name: ${{ inputs.artifacts_download_name }}
           path: ${{ inputs.artifacts_download_path }}
           merge-multiple: true
-      
+
       - name: Start npm
-        if: ${{ (fromJson(steps.skip-build.outputs.skip) == false) && (inputs.start_npm == true) }} 
+        if: ${{ (fromJson(steps.skip-build.outputs.skip) == false) && (inputs.start_npm == true) }}
         run: |
           npm set @databox:registry=https://npm.pkg.github.com/databox
           npm set //npm.pkg.github.com/:_authToken=${{ secrets.PACKAGES_READ_TOKEN }}
@@ -233,7 +237,7 @@ jobs:
           retention-days: 1
 
       - name: Extract CDN artifacts from image
-        if: ${{ (fromJson(steps.skip-build.outputs.skip) == false) && (inputs.cdn_artifacts == true) }} 
+        if: ${{ (fromJson(steps.skip-build.outputs.skip) == false) && (inputs.cdn_artifacts == true) }}
         run: |
           mkdir -p ./${{ matrix.platform }}
           docker run --rm -it -d --name temp_container ${{ inputs.cdn_docker_args }} \
@@ -241,20 +245,20 @@ jobs:
           docker cp temp_container:${{ inputs.cdn_artifacts_docker_path }} ./${{ matrix.platform }}
 
       - name: Upload CDN artifacts to S3
-        if: ${{ (fromJson(steps.skip-build.outputs.skip) == false) && (inputs.cdn_artifacts == true) }} 
+        if: ${{ (fromJson(steps.skip-build.outputs.skip) == false) && (inputs.cdn_artifacts == true) }}
         run: |
           aws s3 cp ./${{ matrix.platform }} \
           s3://${{ secrets.RELEASE_ARTIFACTS_S3 }}/${{ inputs.cdn_artifacts_s3_path }}/${{ needs.tag_check.outputs.semver }}/${{ matrix.platform }} \
           --recursive --follow-symlinks
-          
+
     outputs:
       image: ${{ env.IMAGE }}
-  
+
   # Get built tags
   build_tags:
     name: Get built tags
     runs-on: databox-arm64
-    needs: 
+    needs:
       - tag_check
       - build
     outputs:
@@ -278,7 +282,7 @@ jobs:
   manifest:
     uses: databox/.github/.github/workflows/manifest.yml@master
     secrets: inherit
-    needs: 
+    needs:
       - tag_check
       - build
       - build_tags
@@ -287,4 +291,4 @@ jobs:
       image: ${{ needs.build.outputs.image }}
       tag: ${{ needs.tag_check.outputs.semver }}
       additional_tags: ${{ needs.build_tags.outputs.tags }}
-      
+
