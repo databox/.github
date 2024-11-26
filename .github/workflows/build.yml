@@ -212,8 +212,6 @@ jobs:
 
       - name: Docker build and push ${{ env.IMAGE }}:${{ env.IMAGE_TAG }}
         if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
-        env:
-          DOCKER_BUILD_CACHE_S3: ${{ secrets.DOCKER_BUILD_CACHE_S3 }}
         run: |
           docker buildx build \
             ${{ steps.docker-build-args.outputs.result }} \
