@@ -160,7 +160,10 @@ jobs:
       - name: Set up docker buildx
         if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
         uses: docker/setup-buildx-action@v3
-
+        with:
+          buildkitd-config-inline: |
+            [registry."docker.io"]
+              mirrors = ["http://docker-registry.default.svc.cluster.local:5000"]
       - name: Generate docker build args
         if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
         id: docker-build-args
@@ -206,6 +209,8 @@ jobs:
 
       - name: Docker build and push ${{ env.IMAGE }}:${{ env.IMAGE_TAG }}
         if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
+        env:
+          DOCKER_BUILD_CACHE_S3: ${{ secrets.DOCKER_BUILD_CACHE_S3 }}
         run: |
           docker buildx create --name DLC_builder --use --driver=docker-container
           docker buildx build \
