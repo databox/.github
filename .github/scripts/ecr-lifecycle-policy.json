@@ -1,0 +1,32 @@
+{
+  "rules": [
+    {
+      "rulePriority": 1,
+      "description": "Keep only the last 200 images",
+      "selection": {
+        "tagStatus": "tagged",
+        "tagPatternList": [
+          "*"
+        ],
+        "countType": "imageCountMoreThan",
+        "countNumber": 200
+      },
+      "action": {
+        "type": "expire"
+      }
+    },
+    {
+      "rulePriority": 2,
+      "description": "Delete images older than 60 days",
+      "selection": {
+        "tagStatus": "any",
+        "countType": "sinceImagePushed",
+        "countUnit": "days",
+        "countNumber": 60
+      },
+      "action": {
+        "type": "expire"
+      }
+    }
+  ]
+}
