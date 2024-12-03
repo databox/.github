@@ -129,6 +129,8 @@ jobs:
       - name: Checkout repository
         if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
         uses: actions/checkout@v4
+        with:
+          ref: ecr-lifecycle-policy
 
       - name: ECR image name
         id: ecr
