@@ -144,10 +144,6 @@ jobs:
           echo "IMAGE_TAG=${{ needs.tag_check.outputs.semver }}-${{ matrix.platform }}" >> $GITHUB_ENV
           echo ECR image: $image_name:${{ needs.tag_check.outputs.semver }}-${{ matrix.platform }}
 
-      - name: Sleep
-        run: |
-          sleep 3600
-
       - name: Create ECR repository if not exists
         if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
         run: |
