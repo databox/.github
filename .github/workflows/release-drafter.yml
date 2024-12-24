@@ -23,6 +23,11 @@ on:
 jobs:
   Draft-Release:
     runs-on: databox-arm64
+    outputs:
+      release_body: ${{ steps.release-drafter.outputs.body }}
+      release_tag: ${{ steps.release-drafter.outputs.tag_name }}
+      release_html_url: ${{ steps.release-drafter.outputs.html_url }}
+      release_id: ${{ steps.release-drafter.outputs.id }}
     steps:
       - name: Release Drafter
         id: release-drafter
