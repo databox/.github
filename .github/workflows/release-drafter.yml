@@ -1,6 +1,6 @@
 name: Release Drafter
 
-on: 
+on:
   workflow_call:
     inputs:
       target_branch:
@@ -8,11 +8,17 @@ on:
         required: false
         type: string
         default: 'master'
-      publish: 
+      publish:
         description: 'Publish the release'
         required: false
         type: boolean
         default: false
+      latest:
+          description: 'Mark as latest'
+          required: false
+          type: boolean
+          default: false
+
 
 jobs:
   Draft-Release:
@@ -24,5 +30,6 @@ jobs:
         with:
           commitish: ${{ github.event.inputs.target_branch }}
           publish: ${{ github.event.inputs.publish }}
+          latest: ${{ github.event.inputs.latests }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
