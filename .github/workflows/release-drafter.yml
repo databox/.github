@@ -1,6 +1,6 @@
 name: Release Drafter
 
-on: 
+on:
   workflow_call:
     inputs:
       target_branch:
@@ -8,15 +8,41 @@ on:
         required: false
         type: string
         default: 'master'
+      publish:
+        description: 'Publish the release'
+        required: false
+        type: string
+        default: 'false'
+      latest:
+          description: 'Mark as latest'
+          required: false
+          type: string
+          default: 'false'
+    outputs:
+      release_id:
+        value: ${{ jobs.Draft-Release.outputs.release_id }}
+      release_tag:
+        value: ${{ jobs.Draft-Release.outputs.release_tag }}
+      release_html_url:
+        value: ${{ jobs.Draft-Release.outputs.release_html_url }}
+      release_body:
+        value: ${{ jobs.Draft-Release.outputs.release_body }}
 
 jobs:
   Draft-Release:
     runs-on: databox-arm64
+    outputs:
+      release_body: ${{ steps.release-drafter.outputs.body }}
+      release_tag: ${{ steps.release-drafter.outputs.tag_name }}
+      release_html_url: ${{ steps.release-drafter.outputs.html_url }}
+      release_id: ${{ steps.release-drafter.outputs.id }}
     steps:
       - name: Release Drafter
         id: release-drafter
         uses: release-drafter/release-drafter@v6
         with:
           commitish: ${{ github.event.inputs.target_branch }}
+          publish: ${{ github.event.inputs.publish }}
+          latest: ${{ github.event.inputs.latests }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
