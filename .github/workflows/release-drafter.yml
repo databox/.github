@@ -18,7 +18,15 @@ on:
           required: false
           type: string
           default: 'false'
-
+    outputs:
+      release_id:
+        value: ${{ jobs.Draft-Release.outputs.release_id }}
+      release_tag:
+        value: ${{ jobs.Draft-Release.outputs.release_tag }}
+      release_html_url:
+        value: ${{ jobs.Draft-Release.outputs.release_html_url }}
+      release_body:
+        value: ${{ jobs.Draft-Release.outputs.release_body }}
 
 jobs:
   Draft-Release:
