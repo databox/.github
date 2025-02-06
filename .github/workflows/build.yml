@@ -148,38 +148,6 @@ jobs:
         if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
         run: |
           aws ecr describe-repositories --repository-names ${{ env.IMAGE }} || aws ecr create-repository --image-scanning-configuration scanOnPush=true --repository-name ${{ env.IMAGE }} && \
-          aws ecr put-lifecycle-policy --repository-name  ${{ env.IMAGE }} --lifecycle-policy-text '{
-            "rules": [
-              {
-                "rulePriority": 1,
-                "description": "Keep only the last 200 images",
-                "selection": {
-                  "tagStatus": "tagged",
-                  "tagPatternList": [
-                    "*"
-                  ],
-                  "countType": "imageCountMoreThan",
-                  "countNumber": 200
-                },
-                "action": {
-                  "type": "expire"
-                }
-              },
-              {
-                "rulePriority": 2,
-                "description": "Delete images older than 60 days",
-                "selection": {
-                  "tagStatus": "any",
-                  "countType": "sinceImagePushed",
-                  "countUnit": "days",
-                  "countNumber": 60
-                },
-                "action": {
-                  "type": "expire"
-                }
-              }
-            ]
-          }'
 
       - name: Configure AWS Credentials
         if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
