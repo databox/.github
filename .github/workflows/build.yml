@@ -295,12 +295,11 @@ jobs:
 
   post_build_info_to_slack:
     uses: databox/.github/.github/workflows/post_build_info_to_slack.yml@notify-to-slack
-    secrets: inherit
     needs:
       - manifest
       - tag_check
     with:
-      slack_channel: "engineering-releases"
+      slack_channel: "C027FC31SVD"
       service_name: ${{ github.repository }}
       service_version: ${{ needs.tag_check.outputs.semver }}
       service_image: ${{ needs.build.outputs.image }}
