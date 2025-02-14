@@ -283,7 +283,7 @@ jobs:
   manifest:
     uses: databox/.github/.github/workflows/manifest.yml@notify-to-slack
     needs:
-      - tag_checks
+      - tag_check
       - build
       - build_tags
     if: needs.tag_check.outputs.match == 'true'
