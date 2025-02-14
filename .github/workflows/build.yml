@@ -287,6 +287,7 @@ jobs:
       - build
       - build_tags
     if: needs.tag_check.outputs.match == 'true'
+    secrets: inherit
     with:
       image: ${{ needs.build.outputs.image }}
       tag: ${{ needs.tag_check.outputs.semver }}
