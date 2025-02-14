@@ -1,0 +1,64 @@
+name: Build and push image
+on:
+  workflow_call:
+    inputs:
+      slack_channel:
+        description: 'Slack channel'
+        required: true
+        type: string
+      service_name:
+        description: 'Service name'
+        required: true
+        type: string
+      service_version:
+        description: 'Service version'
+        required: true
+        type: string
+      service_image:
+        description: 'Service image'
+        required: true
+        type: string
+      
+jobs:
+  # Build image for each platform
+  notify_slack:
+    name: Notify slack
+    runs-on: databox-arm64
+    steps:
+      - name: Get latest release
+        id: latest_release
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const release = await github.rest.repos.getLatestRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo
+            });
+            return release.data;
+
+      - name: Post to Slack
+        uses: slackapi/slack-github-action@v2
+        with:
+          channel-id: ${{ inputs.slack_channel }}
+          payload: |
+            {
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "🚀 New Release: ${{ inputs.service_name }} v${{ inputs.service_version }}"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Released by:* <@${{ steps.find_slack_user.outputs.user_id }}>\n*Image:* `${{ inputs.service_image }}`\n\n*Release Notes:*\n${{ fromJSON(steps.latest_release.outputs.result).body }}"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+    

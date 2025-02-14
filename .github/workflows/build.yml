@@ -293,3 +293,14 @@ jobs:
       tag: ${{ needs.tag_check.outputs.semver }}
       additional_tags: ${{ needs.build_tags.outputs.tags }}
 
+  post_build_info_to_slack:
+    uses: databox/.github/.github/workflows/post_build_info_to_slack.yml@master
+    secrets: inherit
+    needs:
+      - manifest
+      - tag_check
+    with:
+      service_name: ${{ github.repository }}
+      service_version: ${{ needs.tag_check.outputs.semver }}
+      service_image: ${{ needs.build.outputs.image }}
+
