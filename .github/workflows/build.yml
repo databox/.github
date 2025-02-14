@@ -294,7 +294,7 @@ jobs:
       additional_tags: ${{ needs.build_tags.outputs.tags }}
 
   post_build_info_to_slack:
-    uses: databox/.github/.github/workflows/post_build_info_to_slack.yml@master
+    uses: databox/.github/.github/workflows/post_build_info_to_slack.yml@notify-to-slack
     secrets: inherit
     needs:
       - manifest
