@@ -281,9 +281,9 @@ jobs:
 
   # Build and push manifest
   manifest:
-    uses: databox/.github/.github/workflows/manifest.yml@master
+    uses: databox/.github/.github/workflows/manifest.yml@notify-to-slack
     needs:
-      - tag_check
+      - tag_checks
       - build
       - build_tags
     if: needs.tag_check.outputs.match == 'true'
