@@ -72,7 +72,8 @@ jobs:
               "service_name": "${{ github.repository }}",
               "service_version": "${{ inputs.tag }}",
               "service_image": "${{ inputs.image }}",
-              "service_repository": "${{ github.repository }}",
+              "owner": "${{ github.repository_owner }}",
+              "repository": "${{ github.repository }}",
               "slack_channel": "C027FC31SVD"
             }
           }
