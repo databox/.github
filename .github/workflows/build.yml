@@ -300,7 +300,7 @@ jobs:
       - manifest
       - tag_check
     with:
-      slack_channel: ${{ secrets.SLACK_CHANNEL }}
+      slack_channel: "engineering-releases"
       service_name: ${{ github.repository }}
       service_version: ${{ needs.tag_check.outputs.semver }}
       service_image: ${{ needs.build.outputs.image }}
