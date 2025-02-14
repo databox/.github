@@ -55,3 +55,37 @@ jobs:
           docker manifest create $IMAGE \
             ${{ steps.docker-additional-tags.outputs.result }}
           docker manifest push $IMAGE
+
+      - name: Slack notification
+        shell: pwsh
+        run: |
+          $headers = @{
+            "Authorization"="Bearer ${{ secrets.PAT_APPROVE_PR }}";
+            "Accept"="application/vnd.github+json";
+            "X-GitHub-Api-Version"="2022-11-28";
+            "Content-Type"="application/json"
+          }
+
+          #ref: https://docs.github.com/en/rest/repos/repos?apiVersion=2022-11-28#create-a-repository-dispatch-event
+          $apiRepoUrl = "https://api.github.com/repos/databox/deploy-config/dispatches"
+          
+          $timestamp = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
+          
+          $body = @{
+            event_type = "new_release_notification";
+            client_payload = @{
+              service_name = "${{ github.repository }}"
+              service_version = "${{ inputs.tag }}"
+              service_image = "${{ inputs.image }}"
+              service_repository = "${{ github.repository }}"
+              slack_channel = "C027FC31SVD"
+            }
+          }
+
+          $bodyString = $body | ConvertTo-Json
+          
+          try {
+            Invoke-WebRequest -Uri "$apiRepoUrl" -Method Post -Headers $headers -Body $bodyString | Out-Null
+          } catch {
+            throw "$($_.exception[0].message)"
+          }  

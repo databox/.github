@@ -282,7 +282,6 @@ jobs:
   # Build and push manifest
   manifest:
     uses: databox/.github/.github/workflows/manifest.yml@master
-    secrets: inherit
     needs:
       - tag_check
       - build
@@ -292,15 +291,3 @@ jobs:
       image: ${{ needs.build.outputs.image }}
       tag: ${{ needs.tag_check.outputs.semver }}
       additional_tags: ${{ needs.build_tags.outputs.tags }}
-
-  post_build_info_to_slack:
-    uses: databox/.github/.github/workflows/post_build_info_to_slack.yml@notify-to-slack
-    needs:
-      - manifest
-      - tag_check
-    with:
-      slack_channel: "C027FC31SVD"
-      service_name: ${{ github.repository }}
-      service_version: ${{ needs.tag_check.outputs.semver }}
-      service_image: ${{ needs.build.outputs.image }}
-
