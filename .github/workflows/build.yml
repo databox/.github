@@ -165,7 +165,7 @@ jobs:
           use: true
           buildkitd-config-inline: |
             [registry."docker.io"]
-              mirrors = ["http://docker-registry.default.svc.cluster.local:5000"]
+              mirrors = ["http://vp11-7cdtetyf.dockermirror.stablebuild.com"]
 
       - name: Generate docker build args
         if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
