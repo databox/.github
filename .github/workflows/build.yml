@@ -128,7 +128,7 @@ jobs:
 
       - name: Checkout repository
         if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: ECR image name
         id: ecr
@@ -198,7 +198,7 @@ jobs:
       - name: Generate docker build args
         if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
         id: docker-build-args
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           debug: true
           github-token: "${{ secrets.GITHUB_TOKEN }}"
@@ -225,7 +225,7 @@ jobs:
 
       - name: Download artifacts
         if: ${{ (inputs.artifacts_download == true)  &&  (fromJson(steps.skip-build.outputs.skip) == false) }}
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: ${{ inputs.artifacts_download_name }}
           path: ${{ inputs.artifacts_download_path }}
@@ -259,7 +259,7 @@ jobs:
 
       - name: Upload ${{ needs.tag_check.outputs.semver }}-${{ matrix.platform }} tag to GitHub Actions Artifacts
         if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ needs.tag_check.outputs.semver }}-${{ matrix.platform }}
           path: ${{ runner.temp }}/${{ needs.tag_check.outputs.semver }}
@@ -294,7 +294,7 @@ jobs:
       tags: ${{ steps.read.outputs.files }}
     steps:
       - name: Download release tag from GitHub Actions Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: ${{ runner.temp }}/${{ needs.tag_check.outputs.semver }}
           pattern: ${{ needs.tag_check.outputs.semver }}-*
