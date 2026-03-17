@@ -39,7 +39,7 @@ jobs:
     steps:
       - name: Release Drafter
         id: release-drafter
-        uses: release-drafter/release-drafter@v7
+        uses: release-drafter/release-drafter@v6
         with:
           commitish: ${{ github.event.inputs.target_branch }}
           publish: ${{ github.event.inputs.publish }}
