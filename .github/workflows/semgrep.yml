@@ -9,7 +9,7 @@ permissions:
 jobs:
   semgrep:
     name: semgrep/ci
-    runs-on: databox-arm64
+    runs-on: databox-amd64
     container:
       image: semgrep/semgrep
     if: github.actor != 'dependabot[bot]'
