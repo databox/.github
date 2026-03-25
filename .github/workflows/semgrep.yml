@@ -15,4 +15,4 @@ jobs:
     if: github.actor != 'dependabot[bot]'
     steps:
       - uses: actions/checkout@v6
-      - run: semgrep scan --config auto
+      - run: semgrep scan --config auto --error
