@@ -1,0 +1,144 @@
+name: Security -> SAST (Semgrep CE)
+
+# Reusable SAST workflow: secure-coding analysis with Semgrep Community Edition.
+# No SEMGREP_APP_TOKEN, no platform login — registry rulesets only.
+# SOC 2 Evidence #74 / DCF-784. Rulesets are locked centrally below.
+
+on:
+  workflow_call:
+    inputs:
+      stacks:
+        description: 'Space-separated tech stacks, e.g. "go python". Empty = generic only.'
+        type: string
+        default: ''
+      fail_on_severity:
+        description: 'none | high | critical — repo-owned gating rollout'
+        type: string
+        default: none
+      runs_on:
+        description: 'Runner label'
+        type: string
+        default: databox-arm64
+
+permissions:
+  contents: read
+  actions: read
+  security-events: write
+
+jobs:
+  semgrep:
+    name: Semgrep CE (SAST)
+    runs-on: ${{ inputs.runs_on }}
+    env:
+      FAIL_ON_SEVERITY: ${{ inputs.fail_on_severity }}
+      STACKS: ${{ inputs.stacks }}
+    steps:
+      - name: Checkout caller repo
+        uses: actions/checkout@v6.0.3
+
+      - name: Set up Python
+        uses: actions/setup-python@v6.2.0
+        with:
+          python-version: '3.12'
+
+      - name: Install Semgrep CE
+        run: python -m pip install "semgrep==1.165.0"
+
+      - name: Run Semgrep CE
+        env:
+          SEMGREP_SEND_METRICS: "off"
+        run: |
+          set -uo pipefail
+          # Always-on cross-cutting rulesets.
+          configs=(--config p/default --config p/security-audit --config p/secrets --config p/dockerfile --config p/github-actions)
+          # Per-stack rulesets (locked mapping).
+          for s in ${STACKS}; do
+            case "$s" in
+              go)     configs+=(--config p/golang) ;;
+              node)   configs+=(--config p/javascript --config p/typescript) ;;
+              python) configs+=(--config p/python) ;;
+              php)    configs+=(--config p/php) ;;
+              *)      echo "::warning title=Semgrep::unknown stack '$s' ignored" ;;
+            esac
+          done
+          echo "Semgrep configs: ${configs[*]}"
+          semgrep scan "${configs[@]}" \
+            --metrics off \
+            --disable-version-check \
+            --sarif-output semgrep.sarif \
+            --json-output semgrep.json \
+            --text || true
+          # `|| true`: findings must not fail this step — gating is a dedicated step below.
+
+      - name: Write Semgrep summary
+        if: always()
+        run: |
+          set -uo pipefail
+          f=semgrep.json
+          q() {
+            local v
+            v=$(jq -r "$1" "$f" 2>/dev/null)
+            case "$v" in ''|null) echo 0;; *) echo "$v";; esac
+          }
+          total=$(q '[.results[]?] | length' "$f")
+          err=$(q '[.results[]? | select(.extra.severity=="ERROR")] | length' "$f")
+          warn=$(q '[.results[]? | select(.extra.severity=="WARNING")] | length' "$f")
+          info=$(q '[.results[]? | select(.extra.severity=="INFO")] | length' "$f")
+          {
+            echo "## Semgrep CE — SAST (secure coding)"
+            echo ""
+            echo "**Tool:** Semgrep Community Edition 1.165.0 (registry rulesets, no token)."
+            echo "**Stacks:** \`${STACKS:-generic only}\`. **Gate:** \`FAIL_ON_SEVERITY=${FAIL_ON_SEVERITY}\` (ERROR ~= high/critical)."
+            echo ""
+            echo "| Severity | Count |"
+            echo "|----------|------:|"
+            echo "| ERROR | ${err} |"
+            echo "| WARNING | ${warn} |"
+            echo "| INFO | ${info} |"
+            echo "| **Total** | **${total}** |"
+            echo ""
+            if [ "${total}" -gt 0 ]; then
+              echo "### Top findings"
+              echo "| Severity | Rule | Location |"
+              echo "|----------|------|----------|"
+              jq -r '[.results[]?] | sort_by(if .extra.severity=="ERROR" then 0 elif .extra.severity=="WARNING" then 1 else 2 end) | .[:20][] | "| \(.extra.severity) | \(.check_id) | \(.path):\(.start.line) |"' "$f"
+              echo ""
+            else
+              echo "No findings. :white_check_mark:"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload Semgrep results (artifacts)
+        if: always()
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: semgrep-results
+          path: |
+            semgrep.sarif
+            semgrep.json
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Upload Semgrep SARIF to Security tab (best-effort)
+        if: always()
+        continue-on-error: true
+        uses: github/codeql-action/upload-sarif@v4.36.2
+        with:
+          sarif_file: semgrep.sarif
+          category: semgrep
+
+      - name: Gate on severity (Semgrep)
+        if: always()
+        run: |
+          set -uo pipefail
+          if [ "${FAIL_ON_SEVERITY}" = "none" ]; then
+            echo "Report-only mode (FAIL_ON_SEVERITY=none): not failing the build."
+            exit 0
+          fi
+          errs=$(jq -r '[.results[]? | select(.extra.severity=="ERROR")] | length' semgrep.json 2>/dev/null || echo 0)
+          errs=${errs:-0}
+          if [ "${errs}" -gt 0 ]; then
+            echo "::error title=Semgrep gate::${errs} ERROR-severity finding(s)."
+            exit 1
+          fi
+          echo "No ERROR-severity findings."
