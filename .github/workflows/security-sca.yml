@@ -1,0 +1,189 @@
+name: Security -> SCA (Trivy)
+
+# Reusable SCA workflow: 3rd-party dependency vulns + license compliance +
+# Dockerfile misconfiguration. SOC 2 Evidence #74 / DCF-784.
+# Locked policy: severity HIGH,CRITICAL + license deny-list in security/trivy-policy.yaml.
+
+on:
+  workflow_call:
+    inputs:
+      fail_on_severity:
+        description: 'none | high | critical — repo-owned gating rollout'
+        type: string
+        default: none
+      dockerfile_path:
+        description: "Dockerfile to config-scan; '' to skip"
+        type: string
+        default: ''
+      runs_on:
+        description: 'Runner label'
+        type: string
+        default: databox-arm64
+
+permissions:
+  contents: read
+  actions: read
+  security-events: write
+
+jobs:
+  trivy:
+    name: Trivy (SCA + license + misconfig)
+    runs-on: ${{ inputs.runs_on }}
+    env:
+      FAIL_ON_SEVERITY: ${{ inputs.fail_on_severity }}
+    steps:
+      - name: Checkout caller repo
+        uses: actions/checkout@v6.0.3
+
+      - name: Load central Trivy policy
+        uses: actions/checkout@v6.0.3
+        with:
+          repository: databox/.github
+          ref: master
+          path: .security-policy
+          sparse-checkout: security/trivy-policy.yaml
+          sparse-checkout-cone-mode: false
+
+      - name: Cache Trivy vulnerability DB
+        uses: actions/cache@v5.0.5
+        with:
+          path: ${{ github.workspace }}/.cache/trivy
+          key: trivy-db-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: |
+            trivy-db-${{ runner.os }}-
+
+      - name: Trivy filesystem scan (vuln + license) — JSON
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln,license
+          severity: HIGH,CRITICAL
+          format: json
+          output: trivy-fs.json
+          exit-code: '0'
+          trivy-config: .security-policy/security/trivy-policy.yaml
+          cache-dir: ${{ github.workspace }}/.cache/trivy
+
+      - name: Trivy filesystem scan (vuln + license) — SARIF
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln,license
+          severity: HIGH,CRITICAL
+          format: sarif
+          output: trivy-fs.sarif
+          exit-code: '0'
+          trivy-config: .security-policy/security/trivy-policy.yaml
+          cache-dir: ${{ github.workspace }}/.cache/trivy
+
+      - name: Trivy config scan (Dockerfile misconfig) — JSON
+        if: inputs.dockerfile_path != ''
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: config
+          scan-ref: ${{ inputs.dockerfile_path }}
+          severity: MEDIUM,HIGH,CRITICAL
+          format: json
+          output: trivy-config.json
+          exit-code: '0'
+          cache-dir: ${{ github.workspace }}/.cache/trivy
+
+      - name: Write Trivy summary
+        if: always()
+        run: |
+          set -uo pipefail
+          fs=trivy-fs.json
+          cfg=trivy-config.json
+          q() {
+            local v
+            v=$(jq -r "$1" "$2" 2>/dev/null)
+            case "$v" in ''|null) echo 0;; *) echo "$v";; esac
+          }
+          vuln_total=$(q '[.Results[]?.Vulnerabilities[]?] | length' "$fs")
+          vuln_crit=$(q '[.Results[]?.Vulnerabilities[]? | select(.Severity=="CRITICAL")] | length' "$fs")
+          vuln_high=$(q '[.Results[]?.Vulnerabilities[]? | select(.Severity=="HIGH")] | length' "$fs")
+          lic_total=$(q '[.Results[]?.Licenses[]?] | length' "$fs")
+          lic_crit=$(q '[.Results[]?.Licenses[]? | select(.Severity=="CRITICAL")] | length' "$fs")
+          lic_high=$(q '[.Results[]?.Licenses[]? | select(.Severity=="HIGH")] | length' "$fs")
+          misc_total=$(q '[.Results[]?.Misconfigurations[]?] | length' "$cfg")
+          {
+            echo "## Trivy — SCA, license & misconfiguration"
+            echo ""
+            echo "**Tool:** Trivy (aquasecurity/trivy-action@v0.36.0)"
+            echo "**Threshold:** HIGH, CRITICAL (Dockerfile: MEDIUM+). **Gate:** \`FAIL_ON_SEVERITY=${FAIL_ON_SEVERITY}\`."
+            echo ""
+            echo "| Category | CRITICAL | HIGH | Total |"
+            echo "|----------|---------:|-----:|------:|"
+            echo "| Dependency vulnerabilities | ${vuln_crit} | ${vuln_high} | ${vuln_total} |"
+            echo "| License policy violations | ${lic_crit} | ${lic_high} | ${lic_total} |"
+            echo "| Dockerfile misconfigurations | - | - | ${misc_total} |"
+            echo ""
+            if [ "${vuln_total}" -gt 0 ]; then
+              echo "### Top dependency vulnerabilities"
+              echo "| Severity | Package | Installed | Fixed | ID |"
+              echo "|----------|---------|-----------|-------|----|"
+              jq -r '[.Results[]?.Vulnerabilities[]?] | sort_by(if .Severity=="CRITICAL" then 0 else 1 end) | .[:15][] | "| \(.Severity) | \(.PkgName) | \(.InstalledVersion) | \(.FixedVersion // "—") | \(.VulnerabilityID) |"' "$fs"
+              echo ""
+            fi
+            if [ "${lic_total}" -gt 0 ]; then
+              echo "### License policy violations"
+              echo "| Severity | License | Package |"
+              echo "|----------|---------|---------|"
+              jq -r '[.Results[]?.Licenses[]?] | .[:15][] | "| \(.Severity) | \(.Name) | \(.PkgName // .FilePath // "—") |"' "$fs"
+              echo ""
+            fi
+            if [ "${misc_total}" -gt 0 ]; then
+              echo "### Dockerfile misconfigurations"
+              echo "| Severity | ID | Title |"
+              echo "|----------|----|-------|"
+              jq -r '[.Results[]?.Misconfigurations[]?] | .[:15][] | "| \(.Severity) | \(.ID) | \(.Title) |"' "$cfg"
+              echo ""
+            fi
+            if [ "${vuln_total}" -eq 0 ] && [ "${lic_total}" -eq 0 ] && [ "${misc_total}" -eq 0 ]; then
+              echo "No HIGH/CRITICAL dependency, license or misconfiguration findings. :white_check_mark:"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload Trivy results (artifacts)
+        if: always()
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: trivy-results
+          path: |
+            trivy-fs.json
+            trivy-fs.sarif
+            trivy-config.json
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Upload Trivy SARIF to Security tab (best-effort)
+        if: always()
+        continue-on-error: true
+        uses: github/codeql-action/upload-sarif@v4.36.2
+        with:
+          sarif_file: trivy-fs.sarif
+          category: trivy
+
+      - name: Gate on severity (Trivy)
+        if: always()
+        run: |
+          set -uo pipefail
+          if [ "${FAIL_ON_SEVERITY}" = "none" ]; then
+            echo "Report-only mode (FAIL_ON_SEVERITY=none): not failing the build."
+            exit 0
+          fi
+          if [ "${FAIL_ON_SEVERITY}" = "critical" ]; then
+            sevs='["CRITICAL"]'
+          else
+            sevs='["HIGH","CRITICAL"]'
+          fi
+          vulns=$(jq --argjson s "$sevs" '[.Results[]?.Vulnerabilities[]? | select(.Severity as $x | $s | index($x))] | length' trivy-fs.json 2>/dev/null); vulns=${vulns:-0}
+          lics=$(jq --argjson s "$sevs" '[.Results[]?.Licenses[]? | select(.Severity as $x | $s | index($x))] | length' trivy-fs.json 2>/dev/null); lics=${lics:-0}
+          total=$((vulns + lics))
+          if [ "$total" -gt 0 ]; then
+            echo "::error title=Trivy gate::${total} finding(s) at/above ${FAIL_ON_SEVERITY} (vulns=${vulns}, licenses=${lics})."
+            exit 1
+          fi
+          echo "No findings at/above ${FAIL_ON_SEVERITY}."
