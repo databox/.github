@@ -7,6 +7,10 @@ name: Security -> SCA (Trivy)
 on:
   workflow_call:
     inputs:
+      stacks:
+        description: 'Space-separated stacks to prepare dependency sources for license scanning, e.g. "go". Empty = no prep (license data may be incomplete).'
+        type: string
+        default: ''
       fail_on_severity:
         description: 'none | high | critical — repo-owned gating rollout'
         type: string
@@ -31,6 +35,7 @@ jobs:
     runs-on: ${{ inputs.runs_on }}
     env:
       FAIL_ON_SEVERITY: ${{ inputs.fail_on_severity }}
+      STACKS: ${{ inputs.stacks }}
     steps:
       - name: Checkout caller repo
         uses: actions/checkout@v6.0.3
@@ -43,6 +48,23 @@ jobs:
           path: .security-policy
           sparse-checkout: security/trivy-policy.yaml
           sparse-checkout-cone-mode: false
+
+      # Dependency-source prep so Trivy can resolve licenses: license texts live in
+      # each dependency's source, not in go.mod/go.sum. Trivy (run natively by
+      # trivy-action) reads Go licenses from the module cache via GOPATH, so we
+      # populate the cache and export GOPATH. Per-stack; extend for node/python later.
+      - name: Set up Go (license resolution)
+        if: contains(inputs.stacks, 'go')
+        uses: actions/setup-go@v6.4.0
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Download Go modules (populate cache for license scan)
+        if: contains(inputs.stacks, 'go')
+        run: |
+          go mod download
+          echo "GOPATH=$(go env GOPATH)" >> "$GITHUB_ENV"
 
       - name: Cache Trivy vulnerability DB
         uses: actions/cache@v5.0.5
@@ -78,6 +100,21 @@ jobs:
           trivy-config: .security-policy/security/trivy-policy.yaml
           cache-dir: ${{ github.workspace }}/.cache/trivy
 
+      # Full license inventory (all severities, no policy filter) — this is the
+      # evidence that licenses were actually examined. Gating still uses the
+      # policy-filtered trivy-fs scan above (HIGH,CRITICAL = forbidden/restricted).
+      - name: Trivy license inventory (all severities) — JSON
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: license
+          severity: UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL
+          format: json
+          output: trivy-licenses.json
+          exit-code: '0'
+          cache-dir: ${{ github.workspace }}/.cache/trivy
+
       - name: Trivy config scan (Dockerfile misconfig) — JSON
         if: inputs.dockerfile_path != ''
         uses: aquasecurity/trivy-action@v0.36.0
@@ -108,6 +145,9 @@ jobs:
           lic_crit=$(q '[.Results[]?.Licenses[]? | select(.Severity=="CRITICAL")] | length' "$fs")
           lic_high=$(q '[.Results[]?.Licenses[]? | select(.Severity=="HIGH")] | length' "$fs")
           misc_total=$(q '[.Results[]?.Misconfigurations[]?] | length' "$cfg")
+          lic=trivy-licenses.json
+          lic_scanned=$(q '[.Results[]?.Licenses[]?] | length' "$lic")
+          lic_pkgs=$(q '[.Results[]?.Licenses[]? | .PkgName] | unique | length' "$lic")
           {
             echo "## Trivy — SCA, license & misconfiguration"
             echo ""
@@ -117,9 +157,22 @@ jobs:
             echo "| Category | CRITICAL | HIGH | Total |"
             echo "|----------|---------:|-----:|------:|"
             echo "| Dependency vulnerabilities | ${vuln_crit} | ${vuln_high} | ${vuln_total} |"
-            echo "| License policy violations | ${lic_crit} | ${lic_high} | ${lic_total} |"
+            echo "| License violations (forbidden) | ${lic_crit} | ${lic_high} | ${lic_total} |"
             echo "| Dockerfile misconfigurations | - | - | ${misc_total} |"
             echo ""
+            echo "### License compliance"
+            echo "Scanned **${lic_scanned}** dependency license(s) across **${lic_pkgs}** package(s); **${lic_total}** policy violation(s) (forbidden/restricted copyleft)."
+            if [ "${lic_scanned}" -gt 0 ]; then
+              echo ""
+              echo "| License | Packages |"
+              echo "|---------|---------:|"
+              jq -r '[.Results[]?.Licenses[]?.Name] | group_by(.) | map({name: .[0], n: length}) | sort_by(-.n) | .[:15][] | "| \(.name) | \(.n) |"' "$lic"
+              echo ""
+            elif [ -n "${STACKS:-}" ]; then
+              echo ""
+              echo "> :warning: Stack prep ran (\`stacks: ${STACKS}\`) but 0 licenses resolved — verify dependency sources were fetched."
+              echo ""
+            fi
             if [ "${vuln_total}" -gt 0 ]; then
               echo "### Top dependency vulnerabilities"
               echo "| Severity | Package | Installed | Fixed | ID |"
@@ -155,6 +208,7 @@ jobs:
             trivy-fs.json
             trivy-fs.sarif
             trivy-config.json
+            trivy-licenses.json
           if-no-files-found: warn
           retention-days: 30
 
