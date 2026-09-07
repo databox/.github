@@ -23,16 +23,6 @@ jobs:
     runs-on: databox-arm64
     timeout-minutes: 1
     steps:
-      # AWS credentials come from the runner node's IAM role via IMDS
-      # (databox-* runners, infrastructure PR #202/#203), so no key is needed
-      # here. Kept commented out for a quick rollback.
-      # - name: Configure AWS Credentials
-      #   uses: aws-actions/configure-aws-credentials@v6
-      #   with:
-      #     aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY }}
-      #     aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      #     aws-region: ${{ secrets.AWS_REGION }}
-
       - name: Additional tags
         id: docker-additional-tags
         uses: actions/github-script@v8
