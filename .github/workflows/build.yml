@@ -110,7 +110,7 @@ jobs:
           - amd64
           - arm64
     env:
-      ECR_REGISTRY: 747181222500.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
+      ECR_REGISTRY: 747181222500.dkr.ecr.us-east-1.amazonaws.com
       IMAGE: ''
       IMAGE_TAG: ''
     steps:
