@@ -113,7 +113,6 @@ jobs:
       ECR_REGISTRY: ${{ secrets.AWS_ECR_REGISTRY }}
       IMAGE: ''
       IMAGE_TAG: ''
-      PACKAGES_APP_ID: ${{ secrets.PACKAGES_APP_ID }}
     steps:
       - name: Determine if build should be skipped
         id: skip-build
@@ -190,12 +189,11 @@ jobs:
             [registry."docker-registry.default.svc.cluster.local:5000"]
               http = true
 
-      # Short-lived token for reading GitHub Packages. Falls back to the
-      # PACKAGES_READ_TOKEN org secret when the app secrets are not set.
+      # Short-lived installation token for reading GitHub Packages
       - name: Mint package read token
-        if: ${{ !fromJson(steps.skip-build.outputs.skip) && env.PACKAGES_APP_ID != '' }}
+        if: ${{ !fromJson(steps.skip-build.outputs.skip) }}
         id: packages-token
-        uses: actions/create-github-app-token@v2
+        uses: actions/create-github-app-token@v3
         with:
           app-id: ${{ secrets.PACKAGES_APP_ID }}
           private-key: ${{ secrets.PACKAGES_APP_PRIVATE_KEY }}
@@ -211,13 +209,13 @@ jobs:
           result-encoding: string
           script: |
             const defaultArgsString = `
-            PACKAGES_READ_TOKEN=${{ steps.packages-token.outputs.token || secrets.PACKAGES_READ_TOKEN }}
+            PACKAGES_READ_TOKEN=${{ steps.packages-token.outputs.token }}
             PACKAGES_READ_USER=${{ secrets.PACKAGES_READ_USER }}
             RSA_PYTHON_MQ_LIB=${{ secrets.RSA_PYTHON_MQ_LIB }}
             BUILD_VERSION=${{ needs.tag_check.outputs.semver }}
             VERSION=${{ needs.tag_check.outputs.semver }}
             RELEASE_TAG=${{ needs.tag_check.outputs.semver }}
-            NODE_AUTH_TOKEN=${{ steps.packages-token.outputs.token || secrets.PACKAGES_READ_TOKEN }}
+            NODE_AUTH_TOKEN=${{ steps.packages-token.outputs.token }}
             PACKAGIST_USERNAME=${{ secrets.PACKAGIST_USERNAME }}
             PACKAGIST_PASSWORD=${{ secrets.PACKAGIST_PASSWORD }}
             GITHUB_API_TOKEN=${{ secrets.PAT_APPROVE_PR }}
@@ -241,7 +239,7 @@ jobs:
         if: ${{ (fromJson(steps.skip-build.outputs.skip) == false) && (inputs.start_npm == true) }}
         run: |
           npm set @databox:registry=https://npm.pkg.github.com/databox
-          npm set //npm.pkg.github.com/:_authToken=${{ steps.packages-token.outputs.token || secrets.PACKAGES_READ_TOKEN }}
+          npm set //npm.pkg.github.com/:_authToken=${{ steps.packages-token.outputs.token }}
           npm start
 
       - name: Docker build and push ${{ env.IMAGE }}:${{ env.IMAGE_TAG }}
